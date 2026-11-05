@@ -1,26 +1,138 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
+@layer base {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    /* Color Primitives & Semantics (Light Mode) */
+    --surface-page: #f8fafc;
+    --surface-card: #ffffff;
+    --surface-subtle: #f1f5f9;
+    --surface-sunken: #e2e8f0;
+    --surface-overlay: rgba(15, 23, 42, 0.6);
+
+    --border-subtle: #e2e8f0;
+    --border-default: #cbd5e1;
+    --border-strong: #94a3b8;
+
+    --text-primary: #0f172a;
+    --text-secondary: #334155;
+    --text-muted: #64748b;
+    --text-inverse: #ffffff;
+
+    --brand-primary: #0d9488; /* Teal 600 */
+    --brand-primary-hover: #0f766e; /* Teal 700 */
+    --brand-primary-subtle: #ccfbf1; /* Teal 100 */
+    --brand-primary-text: #115e59;
+
+    --brand-accent: #d97706; /* Amber 600 */
+    --brand-accent-hover: #b45309;
+    --brand-accent-subtle: #fef3c7;
+
+    --status-success: #16a34a;
+    --status-success-subtle: #dcfce7;
+    --status-success-text: #166534;
+
+    --status-warning: #ea580c;
+    --status-warning-subtle: #ffedd5;
+    --status-warning-text: #9a3412;
+
+    --status-danger: #dc2626;
+    --status-danger-hover: #b91c1c;
+    --status-danger-subtle: #fee2e2;
+    --status-danger-text: #991b1b;
+
+    --focus-ring: #0d9488;
+  }
+
+  [data-theme="dark"] {
+    --surface-page: #090d16;
+    --surface-card: #0f172a;
+    --surface-subtle: #1e293b;
+    --surface-sunken: #0b1120;
+    --surface-overlay: rgba(0, 0, 0, 0.75);
+
+    --border-subtle: #1e293b;
+    --border-default: #334155;
+    --border-strong: #475569;
+
+    --text-primary: #f8fafc;
+    --text-secondary: #cbd5e1;
+    --text-muted: #94a3b8;
+    --text-inverse: #0f172a;
+
+    --brand-primary: #14b8a6; /* Teal 500 */
+    --brand-primary-hover: #2dd4bf;
+    --brand-primary-subtle: rgba(20, 184, 166, 0.15);
+    --brand-primary-text: #5eead4;
+
+    --brand-accent: #f59e0b;
+    --brand-accent-hover: #fbbf24;
+    --brand-accent-subtle: rgba(245, 158, 11, 0.15);
+
+    --status-success: #22c55e;
+    --status-success-subtle: rgba(34, 197, 94, 0.15);
+    --status-success-text: #86efac;
+
+    --status-warning: #f97316;
+    --status-warning-subtle: rgba(249, 115, 22, 0.15);
+    --status-warning-text: #fdba74;
+
+    --status-danger: #ef4444;
+    --status-danger-hover: #f87171;
+    --status-danger-subtle: rgba(239, 68, 68, 0.15);
+    --status-danger-text: #fca5a5;
+
+    --focus-ring: #14b8a6;
   }
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: var(--surface-page);
+  color: var(--text-primary);
+  font-family: var(--font-geist-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  margin: 0;
+  padding: 0;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Custom scrollbar for dense data panels */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-default);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--border-strong);
+}
+
+/* Utility classes mapped to semantic design tokens */
+.bg-page { background-color: var(--surface-page); }
+.bg-card { background-color: var(--surface-card); }
+.bg-subtle { background-color: var(--surface-subtle); }
+.bg-sunken { background-color: var(--surface-sunken); }
+
+.border-subtle { border-color: var(--border-subtle); }
+.border-default { border-color: var(--border-default); }
+.border-strong { border-color: var(--border-strong); }
+
+.text-primary-token { color: var(--text-primary); }
+.text-secondary-token { color: var(--text-secondary); }
+.text-muted-token { color: var(--text-muted); }
+
+.focus-ring-style {
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+}
+.focus-ring-style:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
 }

@@ -1,69 +1,94 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
+import React, { useState } from "react";
+import { AdminHeader } from "@/components/admin/admin-header";
+import { AdminSidebar, type AdminTab } from "@/components/admin/admin-sidebar";
+import { ModuleOverview } from "@/components/admin/module-overview";
+import { ModuleSupplyChain } from "@/components/admin/module-supply-chain";
+import { ModuleConsolidation } from "@/components/admin/module-consolidation";
+import { ModulePortfolio } from "@/components/admin/module-portfolio";
+import { ModuleAssignment } from "@/components/admin/module-assignment";
+import { ModuleItineraryCatering } from "@/components/admin/module-itinerary-catering";
+import { ModulePayments } from "@/components/admin/module-payments";
+import { ModuleLogs } from "@/components/admin/module-logs";
+import type { OptimizationLog } from "@/lib/optimizer/types";
+
+export default function AdminDashboardPage() {
+  const [currentTab, setCurrentTab] = useState<AdminTab>("overview");
+  const [logs, setLogs] = useState<OptimizationLog[]>([
+    {
+      id: "log-seed-01",
+      orderId: "ORD-2024-001",
+      type: "supply_chain",
+      input: { pax: 120, serviceLevel: "standard" },
+      result: { totalCost: 54000000, margin: 18000000 },
+      feasible: true,
+      totalOptimizedCost: 54_000_000,
+      marginAchieved: 18_000_000,
+      solverTimeMs: 14,
+      createdAt: "14:15:20",
+      createdBy: "Admin Operasional",
+    },
+    {
+      id: "log-seed-02",
+      orderId: "CROSS-CONSOL-01",
+      type: "consolidation",
+      input: { totalPax: 245, discount: "40%" },
+      result: { totalSavings: 3825000 },
+      feasible: true,
+      totalOptimizedCost: 11_025_000,
+      marginAchieved: 3_825_000,
+      solverTimeMs: 22,
+      createdAt: "14:28:10",
+      createdBy: "Admin Operasional",
+    },
+  ]);
+
+  const handleAddLog = (newLog: OptimizationLog) => {
+    setLogs((prev) => [newLog, ...prev]);
+  };
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
+    <div className="min-h-screen flex flex-col bg-[var(--surface-page)] text-[var(--text-primary)]">
+      {/* Top Header */}
+      <AdminHeader />
+
+      {/* Main Workspace with Sidebar + Dynamic Content */}
+      <div className="flex-1 flex flex-col lg:flex-row w-full max-w-[1600px] mx-auto">
+        {/* Navigation Sidebar */}
+        <AdminSidebar currentTab={currentTab} onSelectTab={setCurrentTab} />
+
+        {/* Workspace Content Area */}
+        <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto">
+          {currentTab === "overview" && (
+            <ModuleOverview onSelectTab={setCurrentTab} />
+          )}
+
+          {currentTab === "supply-chain" && (
+            <ModuleSupplyChain onLogAdd={handleAddLog} />
+          )}
+
+          {currentTab === "consolidation" && (
+            <ModuleConsolidation onLogAdd={handleAddLog} />
+          )}
+
+          {currentTab === "portfolio" && (
+            <ModulePortfolio onLogAdd={handleAddLog} />
+          )}
+
+          {currentTab === "assignment" && (
+            <ModuleAssignment onLogAdd={handleAddLog} />
+          )}
+
+          {currentTab === "itinerary-catering" && (
+            <ModuleItineraryCatering onLogAdd={handleAddLog} />
+          )}
+
+          {currentTab === "payments" && <ModulePayments />}
+
+          {currentTab === "logs" && <ModuleLogs logs={logs} />}
+        </main>
+      </div>
     </div>
   );
 }
