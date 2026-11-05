@@ -2,45 +2,58 @@
 
 @layer base {
   :root {
-    /* Color Primitives & Semantics (Light Mode) */
+    /* Color Primitives & Semantics (Light Mode - Modern Violet/Indigo SaaS) */
     --surface-page: #f8fafc;
     --surface-card: #ffffff;
     --surface-subtle: #f1f5f9;
-    --surface-sunken: #e2e8f0;
+    --surface-sunken: #f8fafc;
     --surface-overlay: rgba(15, 23, 42, 0.6);
 
-    --border-subtle: #e2e8f0;
-    --border-default: #cbd5e1;
-    --border-strong: #94a3b8;
+    --border-subtle: #f1f5f9;
+    --border-default: #e2e8f0;
+    --border-strong: #cbd5e1;
 
     --text-primary: #0f172a;
     --text-secondary: #334155;
     --text-muted: #64748b;
+    --text-subtle: #94a3b8;
     --text-inverse: #ffffff;
 
-    --brand-primary: #0d9488; /* Teal 600 */
-    --brand-primary-hover: #0f766e; /* Teal 700 */
-    --brand-primary-subtle: #ccfbf1; /* Teal 100 */
-    --brand-primary-text: #115e59;
+    /* Brand Primary: Electric Violet / Indigo */
+    --brand-primary: #6366f1; /* Indigo 500 */
+    --brand-primary-hover: #4f46e5; /* Indigo 600 */
+    --brand-primary-subtle: #eef2ff; /* Indigo 50 */
+    --brand-primary-text: #4338ca; /* Indigo 700 */
 
-    --brand-accent: #d97706; /* Amber 600 */
-    --brand-accent-hover: #b45309;
-    --brand-accent-subtle: #fef3c7;
+    /* Brand Gradient */
+    --brand-gradient-from: #6366f1;
+    --brand-gradient-to: #8b5cf6;
 
-    --status-success: #16a34a;
-    --status-success-subtle: #dcfce7;
-    --status-success-text: #166534;
+    /* Brand Secondary Accent: Electric Cyan / Sky */
+    --brand-accent: #06b6d4; /* Cyan 500 */
+    --brand-accent-hover: #0891b2;
+    --brand-accent-subtle: #ecfeff;
+    --brand-accent-text: #0e7490;
 
-    --status-warning: #ea580c;
-    --status-warning-subtle: #ffedd5;
-    --status-warning-text: #9a3412;
+    /* Status Colors */
+    --status-success: #10b981;
+    --status-success-subtle: #ecfdf5;
+    --status-success-text: #047857;
 
-    --status-danger: #dc2626;
-    --status-danger-hover: #b91c1c;
-    --status-danger-subtle: #fee2e2;
-    --status-danger-text: #991b1b;
+    --status-warning: #f59e0b;
+    --status-warning-subtle: #fffbeb;
+    --status-warning-text: #b45309;
 
-    --focus-ring: #0d9488;
+    --status-danger: #ef4444;
+    --status-danger-hover: #dc2626;
+    --status-danger-subtle: #fef2f2;
+    --status-danger-text: #b91c1c;
+
+    --focus-ring: #6366f1;
+
+    /* Ambient elevation shadows */
+    --shadow-card: 0 1px 3px 0 rgba(0, 0, 0, 0.02), 0 4px 16px -2px rgba(15, 23, 42, 0.04);
+    --shadow-hover: 0 8px 24px -4px rgba(99, 102, 241, 0.12), 0 2px 6px -1px rgba(0, 0, 0, 0.04);
   }
 
   [data-theme="dark"] {
@@ -57,31 +70,39 @@
     --text-primary: #f8fafc;
     --text-secondary: #cbd5e1;
     --text-muted: #94a3b8;
+    --text-subtle: #64748b;
     --text-inverse: #0f172a;
 
-    --brand-primary: #14b8a6; /* Teal 500 */
-    --brand-primary-hover: #2dd4bf;
-    --brand-primary-subtle: rgba(20, 184, 166, 0.15);
-    --brand-primary-text: #5eead4;
+    --brand-primary: #818cf8; /* Indigo 400 */
+    --brand-primary-hover: #a5b4fc;
+    --brand-primary-subtle: rgba(99, 102, 241, 0.15);
+    --brand-primary-text: #c7d2fe;
 
-    --brand-accent: #f59e0b;
-    --brand-accent-hover: #fbbf24;
-    --brand-accent-subtle: rgba(245, 158, 11, 0.15);
+    --brand-gradient-from: #818cf8;
+    --brand-gradient-to: #a78bfa;
 
-    --status-success: #22c55e;
-    --status-success-subtle: rgba(34, 197, 94, 0.15);
-    --status-success-text: #86efac;
+    --brand-accent: #22d3ee;
+    --brand-accent-hover: #67e8f9;
+    --brand-accent-subtle: rgba(6, 182, 212, 0.15);
+    --brand-accent-text: #a5f3fc;
 
-    --status-warning: #f97316;
-    --status-warning-subtle: rgba(249, 115, 22, 0.15);
-    --status-warning-text: #fdba74;
+    --status-success: #34d399;
+    --status-success-subtle: rgba(16, 185, 129, 0.15);
+    --status-success-text: #a7f3d0;
 
-    --status-danger: #ef4444;
-    --status-danger-hover: #f87171;
+    --status-warning: #fbbf24;
+    --status-warning-subtle: rgba(245, 158, 11, 0.15);
+    --status-warning-text: #fde68a;
+
+    --status-danger: #f87171;
+    --status-danger-hover: #fca5a5;
     --status-danger-subtle: rgba(239, 68, 68, 0.15);
-    --status-danger-text: #fca5a5;
+    --status-danger-text: #fecaca;
 
-    --focus-ring: #14b8a6;
+    --focus-ring: #818cf8;
+
+    --shadow-card: 0 1px 3px 0 rgba(0, 0, 0, 0.3), 0 4px 16px -2px rgba(0, 0, 0, 0.4);
+    --shadow-hover: 0 8px 24px -4px rgba(99, 102, 241, 0.25);
   }
 }
 
@@ -97,8 +118,8 @@ body {
 
 /* Custom scrollbar for dense data panels */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
 }
 
 ::-webkit-scrollbar-track {
@@ -112,6 +133,18 @@ body {
 
 ::-webkit-scrollbar-thumb:hover {
   background: var(--border-strong);
+}
+
+/* Subtle modern transitions */
+.transition-smooth {
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Gradient text */
+.text-gradient {
+  background: linear-gradient(135deg, var(--brand-gradient-from), var(--brand-gradient-to));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
 /* Utility classes mapped to semantic design tokens */

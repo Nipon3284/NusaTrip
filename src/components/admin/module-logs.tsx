@@ -10,23 +10,22 @@ import type { OptimizationLog } from "@/lib/optimizer/types";
 export function ModuleLogs({ logs }: { logs: OptimizationLog[] }) {
   return (
     <div className="flex flex-col gap-6">
-      <div className="bg-[var(--surface-card)] p-6 rounded-2xl border border-[var(--border-subtle)] flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="bg-[var(--surface-card)] p-5 sm:p-6 rounded-2xl border border-[var(--border-subtle)] shadow-[var(--shadow-card)] flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-[var(--brand-primary)]">
+          <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
             <History className="w-4 h-4" />
             <span>Audit Trail Riset Operasi</span>
           </div>
           <h2 className="text-xl sm:text-2xl font-bold text-[var(--text-primary)] mt-1">
-            Log Eksekusi & Riwayat Keputusan Linear Programming
+            Log Solver & Riwayat Optimasi
           </h2>
-          <p className="text-xs sm:text-sm text-[var(--text-muted)] mt-1 max-w-2xl">
-            Catatan matematis transparan mengenai setiap pemecahan masalah optimasi,
-            waktu komputasi algoritma (ms), dan margin yang dihasilkan.
+          <p className="text-xs text-[var(--text-muted)] mt-1 max-w-2xl">
+            Catatan komputasi matematis transparan, waktu eksekusi (ms), dan margin yang dihasilkan.
           </p>
         </div>
 
-        <Badge variant="brand" icon={<Cpu className="w-3.5 h-3.5" />}>
-          Total {logs.length} Komputasi Tercatat
+        <Badge variant="indigo" icon={<Cpu className="w-3.5 h-3.5" />}>
+          {logs.length} Komputasi Aktif
         </Badge>
       </div>
 

@@ -75,29 +75,28 @@ export function ModulePortfolio({
   return (
     <div className="flex flex-col gap-6">
       {/* Header Banner */}
-      <div className="bg-[var(--surface-card)] p-6 rounded-2xl border border-[var(--border-subtle)] flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="bg-[var(--surface-card)] p-5 sm:p-6 rounded-2xl border border-[var(--border-subtle)] shadow-[var(--shadow-card)] flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-purple-600 dark:text-purple-400">
             <PieChart className="w-4 h-4" />
-            <span>Fungsi LP 3: Riset Operasi</span>
+            <span>0-1 Knapsack Portofolio</span>
           </div>
           <h2 className="text-xl sm:text-2xl font-bold text-[var(--text-primary)] mt-1">
-            Seleksi Event saat Peak Season (Maksimasi Laba Portofolio)
+            Seleksi Event Peak Season
           </h2>
-          <p className="text-xs sm:text-sm text-[var(--text-muted)] mt-1 max-w-2xl">
-            Model 0-1 Knapsack memfilter pesanan saat musim liburan sekolah.
-            Memaksimalkan total laba perusahaan di bawah batas ketersediaan modal uang muka (DP ke vendor) dan tim operasional.
+          <p className="text-xs text-[var(--text-muted)] mt-1 max-w-2xl">
+            Optimasi pemilihan pesanan bernilai tertinggi di bawah batas ketersediaan modal kas dan staf lapangan.
           </p>
         </div>
 
         <Button
-          variant="primary"
-          size="lg"
+          variant="gradient"
+          size="md"
           isLoading={isSolving}
           onClick={handleSolve}
           leftIcon={<Play className="w-4 h-4 fill-current" />}
         >
-          Optimalkan Portofolio Event
+          Jalankan Knapsack
         </Button>
       </div>
 

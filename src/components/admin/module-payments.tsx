@@ -105,29 +105,28 @@ export function ModulePayments() {
   return (
     <div className="flex flex-col gap-6">
       {/* Header Banner */}
-      <div className="bg-[var(--surface-card)] p-6 rounded-2xl border border-[var(--border-subtle)] flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="bg-[var(--surface-card)] p-5 sm:p-6 rounded-2xl border border-[var(--border-subtle)] shadow-[var(--shadow-card)] flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-blue-600 dark:text-blue-400">
+          <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
             <CreditCard className="w-4 h-4" />
-            <span>Simulasi Gateway & Rekening Escrow</span>
+            <span>Escrow & Kliring Margin</span>
           </div>
           <h2 className="text-xl sm:text-2xl font-bold text-[var(--text-primary)] mt-1">
-            Simulasi Pembayaran & Kliring Margin Perusahaan
+            Simulasi Pembayaran & Margin Terkunci
           </h2>
-          <p className="text-xs sm:text-sm text-[var(--text-muted)] mt-1 max-w-2xl">
-            Model penerimaan Down Payment (DP) pelanggan via simulasi payment gateway,
-            penguncian saldo cadangan sewa vendor, dan pencairan margin laba bersih.
+          <p className="text-xs text-[var(--text-muted)] mt-1 max-w-2xl">
+            Penerimaan DP pelanggan, penguncian saldo biaya vendor, dan pencairan margin laba bersih.
           </p>
         </div>
 
         <Button
-          variant="primary"
-          size="lg"
+          variant="gradient"
+          size="md"
           isLoading={isSimulating}
           onClick={handleSimulatePayment}
           leftIcon={<ArrowDownLeft className="w-4 h-4" />}
         >
-          Simulasikan Masuk DP Pelanggan
+          Simulasikan Masuk DP
         </Button>
       </div>
 

@@ -1,15 +1,31 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Sun, Moon, Cpu, ShieldCheck, RefreshCw } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+import {
+  Sun,
+  Moon,
+  Bell,
+  Plus,
+  ChevronRight,
+  ShieldCheck,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
 
-export function AdminHeader() {
+interface AdminHeaderProps {
+  currentTabName?: string;
+  onOpenAddModal?: () => void;
+}
+
+export function AdminHeader({
+  currentTabName = "Analitik & Optimasi",
+  onOpenAddModal,
+}: AdminHeaderProps) {
   const [isDark, setIsDark] = useState(false);
+  const [hasUnread, setHasUnread] = useState(true);
 
   useEffect(() => {
-    // Check initial theme
-    const isDarkTheme = document.documentElement.getAttribute("data-theme") === "dark";
+    const isDarkTheme =
+      document.documentElement.getAttribute("data-theme") === "dark";
     setIsDark(isDarkTheme);
   }, []);
 
@@ -24,66 +40,73 @@ export function AdminHeader() {
   };
 
   return (
-    <header className="h-16 px-4 sm:px-6 bg-[var(--surface-card)] border-b border-[var(--border-subtle)] flex items-center justify-between sticky top-0 z-30 shadow-xs">
-      {/* Brand & System Status */}
-      <div className="flex items-center gap-3 sm:gap-4">
-        <div className="flex items-center gap-2.5">
-          <div className="w-9 h-9 rounded-xl bg-[var(--brand-primary)] text-white flex items-center justify-center font-bold tracking-wider text-base shadow-sm">
-            NT
-          </div>
-          <div className="flex flex-col">
-            <span className="text-sm font-bold text-[var(--text-primary)] leading-tight">
-              NusaTrip
-            </span>
-            <span className="text-[10px] text-[var(--text-muted)] font-medium">
-              DSS Control Center
-            </span>
-          </div>
-        </div>
-
-        <div className="hidden md:flex items-center gap-2 pl-4 border-l border-[var(--border-subtle)]">
-          <Badge variant="brand" icon={<Cpu className="w-3 h-3" />}>
-            LP Solver Engine v2.4 Active
-          </Badge>
-          <Badge variant="success" icon={<ShieldCheck className="w-3 h-3" />}>
-            Margin Lock Guard On
-          </Badge>
-        </div>
+    <header className="h-16 px-6 lg:px-8 bg-[var(--surface-card)] border-b border-[var(--border-subtle)] flex items-center justify-between sticky top-0 z-20 transition-colors">
+      {/* Breadcrumbs Navigation */}
+      <div className="flex items-center gap-2 text-xs font-medium text-[var(--text-muted)]">
+        <span className="hover:text-[var(--text-primary)] transition-colors cursor-pointer">
+          NusaTrip
+        </span>
+        <ChevronRight className="w-3.5 h-3.5 text-[var(--text-subtle)]" />
+        <span className="text-[var(--text-primary)] font-semibold">
+          {currentTabName}
+        </span>
       </div>
 
-      {/* Right Controls */}
-      <div className="flex items-center gap-2 sm:gap-3">
-        {/* Quick simulation status */}
-        <div className="hidden lg:flex items-center gap-2 text-xs text-[var(--text-muted)] bg-[var(--surface-subtle)] px-3 py-1.5 rounded-lg border border-[var(--border-subtle)]">
-          <span className="w-2 h-2 rounded-full bg-[var(--status-success)] animate-pulse" />
-          <span>Simulasi Escrow Terhubung</span>
-        </div>
+      {/* Right Controls Area (Add Data, Notifications, Theme, Profile) */}
+      <div className="flex items-center gap-3 sm:gap-4">
+        {/* "+ Tambah Data" Primary Gradient Action Button */}
+        <Button
+          variant="gradient"
+          size="sm"
+          pill={true}
+          onClick={onOpenAddModal}
+          rightIcon={<Plus className="w-3.5 h-3.5" />}
+          className="font-semibold text-xs px-4 shadow-sm"
+        >
+          <span>Tambah Data</span>
+        </Button>
 
-        {/* Theme Toggle */}
+        {/* Notification Bell with indicator dot */}
+        <button
+          type="button"
+          onClick={() => setHasUnread(false)}
+          aria-label="Pemberitahuan sistem"
+          className="relative p-2 rounded-xl text-[var(--text-secondary)] hover:bg-[var(--surface-subtle)] hover:text-[var(--text-primary)] transition-colors focus:outline-none"
+        >
+          <Bell className="w-[18px] h-[18px]" />
+          {hasUnread && (
+            <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-red-500 ring-2 ring-[var(--surface-card)]" />
+          )}
+        </button>
+
+        {/* Dark/Light Theme Toggle */}
         <button
           type="button"
           onClick={toggleTheme}
           aria-label={isDark ? "Ganti ke mode terang" : "Ganti ke mode gelap"}
-          className="p-2 rounded-lg text-[var(--text-secondary)] hover:bg-[var(--surface-subtle)] hover:text-[var(--text-primary)] border border-[var(--border-subtle)] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary)]"
+          className="p-2 rounded-xl text-[var(--text-secondary)] hover:bg-[var(--surface-subtle)] hover:text-[var(--text-primary)] transition-colors focus:outline-none"
         >
           {isDark ? (
-            <Sun className="w-4 h-4 text-amber-400" aria-hidden="true" />
+            <Sun className="w-[18px] h-[18px] text-amber-400" />
           ) : (
-            <Moon className="w-4 h-4" aria-hidden="true" />
+            <Moon className="w-[18px] h-[18px] text-[var(--text-muted)]" />
           )}
         </button>
 
-        {/* User Pill */}
-        <div className="flex items-center gap-2 pl-2">
-          <div className="w-8 h-8 rounded-full bg-[var(--brand-primary-subtle)] border border-[var(--brand-primary)]/30 text-[var(--brand-primary-text)] font-semibold text-xs flex items-center justify-center">
-            AD
+        {/* User Profile Avatar */}
+        <div className="flex items-center gap-2 pl-1 border-l border-[var(--border-subtle)]">
+          <div className="relative">
+            <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-indigo-500 to-violet-600 text-white font-bold text-xs flex items-center justify-center ring-2 ring-indigo-100 dark:ring-indigo-900 shadow-2xs">
+              AD
+            </div>
+            <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 rounded-full ring-2 ring-[var(--surface-card)]" />
           </div>
-          <div className="hidden sm:flex flex-col text-left">
-            <span className="text-xs font-semibold text-[var(--text-primary)]">
-              Admin Operasional
+          <div className="hidden md:flex flex-col text-left">
+            <span className="text-xs font-semibold text-[var(--text-primary)] leading-tight">
+              Advan Tri
             </span>
             <span className="text-[10px] text-[var(--text-muted)]">
-              Ops Lead & Dispatcher
+              Lead Dispatcher
             </span>
           </div>
         </div>

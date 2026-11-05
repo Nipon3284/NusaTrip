@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import {
   LayoutDashboard,
   Layers,
@@ -10,7 +10,12 @@ import {
   Compass,
   CreditCard,
   History,
-  Zap,
+  Settings,
+  HelpCircle,
+  ChevronLeft,
+  ChevronRight,
+  ChevronDown,
+  Sparkles,
 } from "lucide-react";
 
 export type AdminTab =
@@ -26,143 +31,199 @@ export type AdminTab =
 interface AdminSidebarProps {
   currentTab: AdminTab;
   onSelectTab: (tab: AdminTab) => void;
+  isCollapsed?: boolean;
+  onToggleCollapse?: () => void;
 }
 
-export function AdminSidebar({ currentTab, onSelectTab }: AdminSidebarProps) {
+export function AdminSidebar({
+  currentTab,
+  onSelectTab,
+  isCollapsed = false,
+  onToggleCollapse,
+}: AdminSidebarProps) {
+  const [collapsedInternal, setCollapsedInternal] = useState(false);
+  const collapsed = isCollapsed !== undefined && onToggleCollapse ? isCollapsed : collapsedInternal;
+  const toggleCollapse = onToggleCollapse || (() => setCollapsedInternal((prev) => !prev));
+
   const navItems: {
     id: AdminTab;
     label: string;
-    subLabel: string;
     icon: React.ReactNode;
-    badge?: string;
+    hasSubmenu?: boolean;
   }[] = [
     {
       id: "overview",
-      label: "Ringkasan Eksekutif",
-      subLabel: "KPI & Status Operasional",
-      icon: <LayoutDashboard className="w-4 h-4 shrink-0" />,
+      label: "Overview",
+      icon: <LayoutDashboard className="w-[18px] h-[18px] shrink-0" />,
     },
     {
       id: "supply-chain",
-      label: "1. Rantai Pasok Vendor",
-      subLabel: "Minimasi Biaya & Armada",
-      icon: <Layers className="w-4 h-4 shrink-0" />,
-      badge: "Core",
+      label: "Rantai Pasok",
+      icon: <Layers className="w-[18px] h-[18px] shrink-0" />,
+      hasSubmenu: true,
     },
     {
       id: "consolidation",
-      label: "2. Konsolidasi Lintas-Event",
-      subLabel: "Diskon Volume Kuota",
-      icon: <Merge className="w-4 h-4 shrink-0" />,
-      badge: "Margin",
+      label: "Konsolidasi Event",
+      icon: <Merge className="w-[18px] h-[18px] shrink-0" />,
+      hasSubmenu: true,
     },
     {
       id: "portfolio",
-      label: "3. Seleksi Peak Season",
-      subLabel: "Knapsack Modal & Tim",
-      icon: <PieChart className="w-4 h-4 shrink-0" />,
+      label: "Seleksi Portofolio",
+      icon: <PieChart className="w-[18px] h-[18px] shrink-0" />,
+      hasSubmenu: true,
     },
     {
       id: "assignment",
-      label: "4. Penugasan SDM",
-      subLabel: "Assignment Guide & Drone",
-      icon: <Users className="w-4 h-4 shrink-0" />,
+      label: "Penugasan Tim",
+      icon: <Users className="w-[18px] h-[18px] shrink-0" />,
+      hasSubmenu: true,
     },
     {
       id: "itinerary-catering",
-      label: "5. Itinerary & Katering",
-      subLabel: "Knapsack Wisata & Diet",
-      icon: <Compass className="w-4 h-4 shrink-0" />,
+      label: "Itinerary & Katering",
+      icon: <Compass className="w-[18px] h-[18px] shrink-0" />,
+      hasSubmenu: true,
     },
     {
       id: "payments",
-      label: "Simulasi Pembayaran",
-      subLabel: "Escrow DP & Settlement",
-      icon: <CreditCard className="w-4 h-4 shrink-0" />,
+      label: "Simulasi Escrow",
+      icon: <CreditCard className="w-[18px] h-[18px] shrink-0" />,
     },
     {
       id: "logs",
       label: "Log Solver Audit",
-      subLabel: "Riwayat Eksekusi LP",
-      icon: <History className="w-4 h-4 shrink-0" />,
+      icon: <History className="w-[18px] h-[18px] shrink-0" />,
     },
   ];
 
   return (
-    <aside className="w-full lg:w-64 bg-[var(--surface-card)] border-r border-[var(--border-subtle)] flex flex-col shrink-0">
-      {/* Section Tag */}
-      <div className="p-4 border-b border-[var(--border-subtle)] hidden lg:block">
-        <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)]">
-          <Zap className="w-3.5 h-3.5 text-[var(--brand-primary)]" />
-          <span>Modul DSS Linear Prog</span>
+    <aside
+      className={`h-screen sticky top-0 bg-[var(--surface-card)] border-r border-[var(--border-subtle)] flex flex-col justify-between shrink-0 transition-all duration-300 z-30 ${
+        collapsed ? "w-20" : "w-64"
+      }`}
+    >
+      {/* Top Brand Bar */}
+      <div>
+        <div className="h-16 px-5 flex items-center justify-between border-b border-[var(--border-subtle)]">
+          {!collapsed ? (
+            <div className="flex items-center gap-3">
+              {/* Electric Violet Logo Squircle */}
+              <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-violet-500 text-white flex items-center justify-center font-extrabold text-sm shadow-sm shadow-indigo-500/25">
+                <Sparkles className="w-4 h-4 text-white" />
+              </div>
+              <span className="font-bold text-base text-[var(--text-primary)] tracking-tight">
+                NusaTrip
+              </span>
+            </div>
+          ) : (
+            <div className="mx-auto">
+              <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-500 text-white flex items-center justify-center font-extrabold text-sm shadow-sm">
+                <Sparkles className="w-4 h-4 text-white" />
+              </div>
+            </div>
+          )}
+
+          {/* Collapse/Expand Toggle Button */}
+          <button
+            type="button"
+            onClick={toggleCollapse}
+            aria-label={collapsed ? "Perlebar menu samping" : "Perkecil menu samping"}
+            className={`p-1.5 rounded-lg text-[var(--text-subtle)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-subtle)] transition-colors focus:outline-none ${
+              collapsed ? "hidden" : "block"
+            }`}
+          >
+            <ChevronLeft className="w-4 h-4" />
+          </button>
         </div>
+
+        {/* Navigation Items List */}
+        <nav className="p-3 space-y-1.5" aria-label="Menu Utama">
+          {navItems.map((item) => {
+            const isActive = currentTab === item.id;
+            return (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => onSelectTab(item.id)}
+                title={collapsed ? item.label : undefined}
+                className={`w-full flex items-center rounded-xl transition-all duration-150 group text-left ${
+                  collapsed ? "justify-center px-0 py-2.5" : "px-3.5 py-2.5 justify-between"
+                } ${
+                  isActive
+                    ? "bg-indigo-50 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300 font-semibold shadow-2xs"
+                    : "text-[var(--text-secondary)] hover:bg-[var(--surface-subtle)] hover:text-[var(--text-primary)] font-medium"
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <span
+                    className={`${
+                      isActive
+                        ? "text-indigo-600 dark:text-indigo-400"
+                        : "text-[var(--text-muted)] group-hover:text-[var(--text-primary)]"
+                    }`}
+                  >
+                    {item.icon}
+                  </span>
+                  {!collapsed && (
+                    <span className="text-xs tracking-normal truncate">
+                      {item.label}
+                    </span>
+                  )}
+                </div>
+
+                {!collapsed && item.hasSubmenu && (
+                  <ChevronDown
+                    className={`w-3.5 h-3.5 transition-transform ${
+                      isActive
+                        ? "text-indigo-600 dark:text-indigo-400"
+                        : "text-[var(--text-subtle)] group-hover:text-[var(--text-muted)]"
+                    }`}
+                  />
+                )}
+              </button>
+            );
+          })}
+        </nav>
       </div>
 
-      {/* Nav List */}
-      <nav
-        aria-label="Menu Admin"
-        className="p-2 sm:p-3 flex lg:flex-col gap-1 overflow-x-auto lg:overflow-x-visible no-scrollbar"
-      >
-        {navItems.map((item) => {
-          const isActive = currentTab === item.id;
-          return (
-            <button
-              key={item.id}
-              type="button"
-              onClick={() => onSelectTab(item.id)}
-              className={`w-full flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg text-left transition-colors whitespace-nowrap lg:whitespace-normal select-none ${
-                isActive
-                  ? "bg-[var(--brand-primary-subtle)] text-[var(--brand-primary-text)] font-semibold border border-[var(--brand-primary)]/20 shadow-xs"
-                  : "text-[var(--text-secondary)] hover:bg-[var(--surface-subtle)] hover:text-[var(--text-primary)] border border-transparent"
-              }`}
-            >
-              <div className="flex items-center gap-2.5 min-w-0">
-                <span
-                  className={`${
-                    isActive
-                      ? "text-[var(--brand-primary)]"
-                      : "text-[var(--text-muted)]"
-                  }`}
-                >
-                  {item.icon}
-                </span>
-                <div className="flex flex-col min-w-0">
-                  <span className="text-xs font-medium truncate">
-                    {item.label}
-                  </span>
-                  <span className="text-[10px] text-[var(--text-muted)] truncate hidden lg:block">
-                    {item.subLabel}
-                  </span>
-                </div>
-              </div>
+      {/* Bottom Footer (Settings & Help) */}
+      <div className="p-3 border-t border-[var(--border-subtle)] space-y-1">
+        <button
+          type="button"
+          onClick={() => onSelectTab("overview")}
+          className={`w-full flex items-center rounded-xl py-2 text-[var(--text-secondary)] hover:bg-[var(--surface-subtle)] hover:text-[var(--text-primary)] transition-colors ${
+            collapsed ? "justify-center px-0" : "px-3.5 gap-3"
+          }`}
+          title={collapsed ? "Pengaturan" : undefined}
+        >
+          <Settings className="w-[18px] h-[18px] text-[var(--text-muted)]" />
+          {!collapsed && <span className="text-xs font-medium">Pengaturan</span>}
+        </button>
 
-              {item.badge && (
-                <span
-                  className={`text-[9px] font-bold px-1.5 py-0.5 rounded-md uppercase hidden lg:inline-block ${
-                    isActive
-                      ? "bg-[var(--brand-primary)] text-white"
-                      : "bg-[var(--surface-subtle)] text-[var(--text-muted)] border border-[var(--border-subtle)]"
-                  }`}
-                >
-                  {item.badge}
-                </span>
-              )}
-            </button>
-          );
-        })}
-      </nav>
+        <button
+          type="button"
+          onClick={() => onSelectTab("overview")}
+          className={`w-full flex items-center rounded-xl py-2 text-[var(--text-secondary)] hover:bg-[var(--surface-subtle)] hover:text-[var(--text-primary)] transition-colors ${
+            collapsed ? "justify-center px-0" : "px-3.5 gap-3"
+          }`}
+          title={collapsed ? "Bantuan" : undefined}
+        >
+          <HelpCircle className="w-[18px] h-[18px] text-[var(--text-muted)]" />
+          {!collapsed && <span className="text-xs font-medium">Bantuan</span>}
+        </button>
 
-      {/* Footer Info Box */}
-      <div className="mt-auto p-4 border-t border-[var(--border-subtle)] hidden lg:block">
-        <div className="bg-[var(--surface-subtle)] p-3 rounded-lg border border-[var(--border-subtle)] text-xs text-[var(--text-muted)]">
-          <p className="font-semibold text-[var(--text-primary)] mb-1">
-            Prinsip Agregator
-          </p>
-          <p className="text-[11px] leading-relaxed">
-            Keuntungan NusaTrip murni berasal dari selisih antara nilai kontrak
-            klien dengan biaya riil vendor yang dioptimalkan oleh LP Solver.
-          </p>
-        </div>
+        {collapsed && (
+          <button
+            type="button"
+            onClick={toggleCollapse}
+            aria-label="Perlebar menu samping"
+            className="w-full flex items-center justify-center py-2 text-[var(--text-subtle)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-subtle)] rounded-xl transition-colors"
+          >
+            <ChevronRight className="w-4 h-4" />
+          </button>
+        )}
       </div>
     </aside>
   );

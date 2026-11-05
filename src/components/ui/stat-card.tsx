@@ -1,19 +1,19 @@
 "use client";
 
-import React from "react";
-import { TrendingUp, TrendingDown, Minus } from "lucide-react";
+import React, { useState } from "react";
+import { Info } from "lucide-react";
 
 export interface StatCardProps {
   label: string;
   value: string;
   subValue?: string;
+  tooltip?: string;
   delta?: {
     value: string;
     trend: "up" | "down" | "neutral";
     label?: string;
+    isPositiveGood?: boolean; // Default: true (up = green, down = red). For costs/churn: false (down = green, up = red)
   };
-  icon?: React.ReactNode;
-  isLead?: boolean;
   className?: string;
 }
 
@@ -21,71 +21,78 @@ export function StatCard({
   label,
   value,
   subValue,
+  tooltip,
   delta,
-  icon,
-  isLead = false,
   className = "",
 }: StatCardProps) {
+  const [showTooltip, setShowTooltip] = useState(false);
+
+  const isGood = delta
+    ? delta.isPositiveGood === false
+      ? delta.trend === "down"
+      : delta.trend === "up"
+    : true;
+
+  const trendColorClass = delta
+    ? delta.trend === "neutral"
+      ? "text-[var(--text-muted)]"
+      : isGood
+      ? "text-emerald-600 dark:text-emerald-400"
+      : "text-red-500 dark:text-red-400"
+    : "text-[var(--text-muted)]";
+
   return (
     <div
-      className={`rounded-xl border transition-all ${
-        isLead
-          ? "bg-gradient-to-br from-[var(--surface-card)] to-[var(--surface-subtle)] border-[var(--brand-primary)]/40 p-6 shadow-md ring-1 ring-[var(--brand-primary)]/10"
-          : "bg-[var(--surface-card)] border-[var(--border-subtle)] p-5 shadow-xs"
-      } ${className}`}
+      className={`rounded-2xl bg-[var(--surface-card)] border border-[var(--border-subtle)] p-5 sm:p-6 shadow-[var(--shadow-card)] hover:border-indigo-100 hover:shadow-md transition-all duration-200 flex flex-col justify-between ${className}`}
     >
-      <div className="flex items-center justify-between gap-3 mb-3">
-        <span
-          className={`text-xs font-semibold uppercase tracking-wider ${
-            isLead ? "text-[var(--brand-primary-text)]" : "text-[var(--text-muted)]"
-          }`}
-        >
+      {/* Top Row: Metric Label & Info Tooltip */}
+      <div className="flex items-center justify-between gap-2 relative">
+        <span className="text-[13px] font-medium text-[var(--text-secondary)] tracking-normal">
           {label}
         </span>
-        {icon && (
-          <div
-            className={`p-2 rounded-lg flex items-center justify-center shrink-0 ${
-              isLead
-                ? "bg-[var(--brand-primary)] text-white shadow-xs"
-                : "bg-[var(--surface-subtle)] text-[var(--text-secondary)] border border-[var(--border-subtle)]"
-            }`}
-          >
-            {icon}
+        {tooltip && (
+          <div className="relative">
+            <button
+              type="button"
+              aria-label={`Info untuk ${label}`}
+              onMouseEnter={() => setShowTooltip(true)}
+              onMouseLeave={() => setShowTooltip(false)}
+              onFocus={() => setShowTooltip(true)}
+              onBlur={() => setShowTooltip(false)}
+              className="p-1 rounded-full text-[var(--text-subtle)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-subtle)] transition-colors focus:outline-none"
+            >
+              <Info className="w-3.5 h-3.5" />
+            </button>
+            {showTooltip && (
+              <div className="absolute right-0 top-6 z-20 w-52 p-2.5 text-[11px] leading-relaxed bg-[var(--surface-card)] text-[var(--text-secondary)] rounded-xl border border-[var(--border-default)] shadow-lg animate-in fade-in duration-150">
+                {tooltip}
+              </div>
+            )}
           </div>
         )}
       </div>
 
-      <div className="flex flex-col gap-1.5">
-        <div
-          className={`font-bold tracking-tight text-[var(--text-primary)] ${
-            isLead ? "text-3xl lg:text-4xl" : "text-2xl"
-          }`}
-        >
-          {value}
-        </div>
+      {/* Main Metric Value */}
+      <div className="text-2xl sm:text-[28px] font-bold text-[var(--text-primary)] tracking-tight my-2">
+        {value}
+      </div>
 
-        {(subValue || delta) && (
-          <div className="flex items-center gap-2 flex-wrap text-xs">
-            {delta && (
-              <span
-                className={`inline-flex items-center gap-1 font-semibold px-2 py-0.5 rounded-md ${
-                  delta.trend === "up"
-                    ? "bg-[var(--status-success-subtle)] text-[var(--status-success-text)]"
-                    : delta.trend === "down"
-                    ? "bg-[var(--status-danger-subtle)] text-[var(--status-danger-text)]"
-                    : "bg-[var(--surface-subtle)] text-[var(--text-muted)]"
-                }`}
-              >
-                {delta.trend === "up" && <TrendingUp className="w-3.5 h-3.5" aria-hidden="true" />}
-                {delta.trend === "down" && <TrendingDown className="w-3.5 h-3.5" aria-hidden="true" />}
-                {delta.trend === "neutral" && <Minus className="w-3.5 h-3.5" aria-hidden="true" />}
-                <span>{delta.value}</span>
-              </span>
-            )}
-            {subValue && (
-              <span className="text-[var(--text-muted)]">{subValue}</span>
-            )}
-          </div>
+      {/* Bottom Trend / Subtext */}
+      <div className="flex items-center gap-1.5 text-xs font-medium">
+        {delta && (
+          <span className={trendColorClass}>
+            {delta.value}
+          </span>
+        )}
+        {delta?.label && (
+          <span className="text-[var(--text-muted)] font-normal">
+            {delta.label}
+          </span>
+        )}
+        {subValue && !delta && (
+          <span className="text-[var(--text-muted)] font-normal">
+            {subValue}
+          </span>
         )}
       </div>
     </div>

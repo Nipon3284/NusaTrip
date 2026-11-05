@@ -124,18 +124,17 @@ export function ModuleItineraryCatering({
   return (
     <div className="flex flex-col gap-6">
       {/* Header Banner */}
-      <div className="bg-[var(--surface-card)] p-6 rounded-2xl border border-[var(--border-subtle)] flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="bg-[var(--surface-card)] p-5 sm:p-6 rounded-2xl border border-[var(--border-subtle)] shadow-[var(--shadow-card)] flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-teal-600 dark:text-teal-400">
+          <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-amber-600 dark:text-amber-400">
             <Compass className="w-4 h-4" />
-            <span>Fungsi LP 5: Riset Operasi</span>
+            <span>Knapsack & Diet Problem</span>
           </div>
           <h2 className="text-xl sm:text-2xl font-bold text-[var(--text-primary)] mt-1">
-            Generator Itinerary & Katering Berbatas Budget
+            Itinerary & Katering Berbatas Biaya
           </h2>
-          <p className="text-xs sm:text-sm text-[var(--text-muted)] mt-1 max-w-2xl">
-            Optimasi Knapsack untuk jadwal wisata berdasar kepuasan rating & durasi,
-            serta solusi Diet Problem untuk menu katering bergizi lengkap di bawah batas plafon per porsi.
+          <p className="text-xs text-[var(--text-muted)] mt-1 max-w-2xl">
+            Maksimalkan kepuasan atraksi wisata dan menu gizi katering di bawah batas pagu klien.
           </p>
         </div>
 

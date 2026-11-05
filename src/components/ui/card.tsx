@@ -4,7 +4,7 @@ import React from "react";
 
 export interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
   children: React.ReactNode;
-  variant?: "default" | "sunken" | "subtle";
+  variant?: "default" | "sunken" | "subtle" | "elevated";
   padding?: "none" | "sm" | "md" | "lg";
   className?: string;
 }
@@ -17,21 +17,22 @@ export function Card({
   ...props
 }: CardProps) {
   const bgStyles = {
-    default: "bg-[var(--surface-card)] border-[var(--border-subtle)]",
-    sunken: "bg-[var(--surface-sunken)] border-[var(--border-default)]",
-    subtle: "bg-[var(--surface-subtle)] border-[var(--border-subtle)]",
+    default: "bg-[var(--surface-card)] border border-[var(--border-subtle)] shadow-[var(--shadow-card)]",
+    sunken: "bg-[var(--surface-sunken)] border border-[var(--border-default)]",
+    subtle: "bg-[var(--surface-subtle)] border border-[var(--border-subtle)]",
+    elevated: "bg-[var(--surface-card)] border border-[var(--border-subtle)] shadow-[var(--shadow-hover)]",
   }[variant];
 
   const paddingStyles = {
     none: "p-0",
-    sm: "p-3.5",
-    md: "p-5",
-    lg: "p-7",
+    sm: "p-3.5 sm:p-4",
+    md: "p-5 sm:p-6",
+    lg: "p-6 sm:p-8",
   }[padding];
 
   return (
     <div
-      className={`rounded-xl border shadow-xs transition-shadow ${bgStyles} ${paddingStyles} ${className}`}
+      className={`rounded-2xl transition-all duration-200 ${bgStyles} ${paddingStyles} ${className}`}
       {...props}
     >
       {children}

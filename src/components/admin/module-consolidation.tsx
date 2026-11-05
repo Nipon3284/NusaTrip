@@ -81,29 +81,28 @@ export function ModuleConsolidation({
   return (
     <div className="flex flex-col gap-6">
       {/* Header Banner */}
-      <div className="bg-[var(--surface-card)] p-6 rounded-2xl border border-[var(--border-subtle)] flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="bg-[var(--surface-card)] p-5 sm:p-6 rounded-2xl border border-[var(--border-subtle)] shadow-[var(--shadow-card)] flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-[var(--brand-accent)]">
+          <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-cyan-600 dark:text-cyan-400">
             <Merge className="w-4 h-4" />
-            <span>Fungsi LP 2: Riset Operasi</span>
+            <span>Diskon Skala Volume</span>
           </div>
           <h2 className="text-xl sm:text-2xl font-bold text-[var(--text-primary)] mt-1">
-            Konsolidasi Lintas-Event (Mengejar Diskon Syarat Kuota)
+            Konsolidasi Kuota Lintas-Event
           </h2>
-          <p className="text-xs sm:text-sm text-[var(--text-muted)] mt-1 max-w-2xl">
-            Mendeteksi beberapa rombongan berbeda di area yang sama pada hari yang sama,
-            lalu menggabungkan pesanan katering/restoran untuk menembus diskon volume hingga 40%.
+          <p className="text-xs text-[var(--text-muted)] mt-1 max-w-2xl">
+            Penggabungan pesanan rombongan berbeda di destinasi yang sama untuk membuka diskon kuota grosir.
           </p>
         </div>
 
         <Button
-          variant="primary"
-          size="lg"
+          variant="gradient"
+          size="md"
           isLoading={isSolving}
           onClick={handleSolve}
           leftIcon={<Play className="w-4 h-4 fill-current" />}
         >
-          Konsolidasikan Rute & Vendor
+          Jalankan Konsolidasi
         </Button>
       </div>
 

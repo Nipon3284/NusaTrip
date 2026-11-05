@@ -93,29 +93,28 @@ export function ModuleSupplyChain({
   return (
     <div className="flex flex-col gap-6">
       {/* Module Title Banner */}
-      <div className="bg-[var(--surface-card)] p-6 rounded-2xl border border-[var(--border-subtle)] flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="bg-[var(--surface-card)] p-5 sm:p-6 rounded-2xl border border-[var(--border-subtle)] shadow-[var(--shadow-card)] flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-[var(--brand-primary)]">
+          <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
             <Layers className="w-4 h-4" />
-            <span>Fungsi LP 1: Riset Operasi</span>
+            <span>Minimasi Biaya Pasok</span>
           </div>
           <h2 className="text-xl sm:text-2xl font-bold text-[var(--text-primary)] mt-1">
-            Optimasi Rantai Pasok Vendor (Minimasi Biaya Pengadaan)
+            Optimasi Armada & Pengadaan Vendor
           </h2>
-          <p className="text-xs sm:text-sm text-[var(--text-muted)] mt-1 max-w-2xl">
-            Menghitung kombinasi sewa bus tanpa pemborosan kursi kosong (idle capacity),
-            pemecahan alokasi hotel multi-vendor, dan pembagian tiket bundling termurah.
+          <p className="text-xs text-[var(--text-muted)] mt-1 max-w-2xl">
+            Kombinasi kapasitas sewa armada tanpa pemborosan kursi kosong dan alokasi kamar hotel efisien.
           </p>
         </div>
 
         <Button
-          variant="primary"
-          size="lg"
+          variant="gradient"
+          size="md"
           isLoading={isSolving}
           onClick={handleSolve}
           leftIcon={<Play className="w-4 h-4 fill-current" />}
         >
-          Jalankan Solusi LP
+          Jalankan Solver
         </Button>
       </div>
 
