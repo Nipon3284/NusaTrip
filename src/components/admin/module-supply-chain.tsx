@@ -13,6 +13,9 @@ import {
   ArrowRight,
   Sparkles,
   TrendingUp,
+  Users,
+  Minus,
+  Plus,
 } from "lucide-react";
 import { Card, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -31,16 +34,85 @@ import type {
   SupplyChainResult,
 } from "@/lib/optimizer/types";
 
+interface FleetCombination {
+  bus50: number;
+  bus35: number;
+  hiace15: number;
+  totalSeats: number;
+  totalCost: number;
+  idleSeats: number;
+  description: string;
+}
+
+// Dynamic helper to compute optimal fleet mix under linear constraints
+function getOptimalFleet(pax: number): FleetCombination {
+  const safePax = Math.max(1, pax);
+  let bestCost = Infinity;
+  let bestCombo: FleetCombination = {
+    bus50: 0,
+    bus35: 0,
+    hiace15: 0,
+    totalSeats: 0,
+    totalCost: 0,
+    idleSeats: 0,
+    description: "",
+  };
+
+  const max50 = Math.ceil(safePax / 50) + 1;
+  const max35 = Math.ceil(safePax / 35) + 1;
+  const max15 = Math.ceil(safePax / 15) + 1;
+
+  for (let b50 = 0; b50 <= max50; b50++) {
+    for (let b35 = 0; b35 <= max35; b35++) {
+      for (let h15 = 0; h15 <= max15; h15++) {
+        const seats = b50 * 50 + b35 * 35 + h15 * 15;
+        if (seats >= safePax) {
+          const cost = b50 * 5_500_000 + b35 * 3_800_000 + h15 * 1_200_000;
+          if (cost < bestCost || (cost === bestCost && seats < bestCombo.totalSeats)) {
+            bestCost = cost;
+            const parts: string[] = [];
+            if (b50 > 0) parts.push(`${b50} Bus Besar (50)`);
+            if (b35 > 0) parts.push(`${b35} Bus Medium (35)`);
+            if (h15 > 0) parts.push(`${h15} Hiace (15)`);
+
+            bestCombo = {
+              bus50: b50,
+              bus35: b35,
+              hiace15: h15,
+              totalSeats: seats,
+              totalCost: cost,
+              idleSeats: seats - safePax,
+              description: parts.join(" + ") || "1 Hiace (15)",
+            };
+          }
+        }
+      }
+    }
+  }
+
+  return bestCombo;
+}
+
 export function ModuleSupplyChain({
   onLogAdd,
 }: {
   onLogAdd?: (log: any) => void;
 }) {
-  const [participantCount, setParticipantCount] = useState<number>(115);
+  const [participantCount, setParticipantCount] = useState<number>(105);
   const [serviceLevel, setServiceLevel] = useState<ServiceLevel>("standard");
   const [clientBudget, setClientBudget] = useState<number>(55_000_000);
   const [isSolving, setIsSolving] = useState<boolean>(false);
   const [result, setResult] = useState<SupplyChainResult | null>(null);
+
+  // Dynamic calculations for naive baseline vs optimal LP recommendation
+  const safePax = Math.max(1, participantCount || 1);
+  const naiveBusCount = Math.max(1, Math.ceil(safePax / 50));
+  const naiveCapacity = naiveBusCount * 50;
+  const naiveBusCost = naiveBusCount * 5_500_000;
+  const naiveIdleSeats = Math.max(0, naiveCapacity - safePax);
+
+  const optimalFleet = getOptimalFleet(safePax);
+  const transportSavings = Math.max(0, naiveBusCost - optimalFleet.totalCost);
 
   // Run solver on click
   const handleSolve = () => {
@@ -48,7 +120,7 @@ export function ModuleSupplyChain({
     setTimeout(() => {
       const solverOutput = solveSupplyChain({
         orderId: "ORD-SC-LIVE",
-        participantCount,
+        participantCount: safePax,
         budget: clientBudget,
         serviceLevel,
         requirements: {
@@ -68,7 +140,7 @@ export function ModuleSupplyChain({
           id: `log-${Date.now()}`,
           orderId: "ORD-SC-LIVE",
           type: "supply_chain",
-          input: { participantCount, serviceLevel, clientBudget },
+          input: { participantCount: safePax, serviceLevel, clientBudget },
           result: {
             totalCost: solverOutput.totalCost,
             margin: solverOutput.margin,
@@ -84,11 +156,6 @@ export function ModuleSupplyChain({
       }
     }, 450);
   };
-
-  // Naive comparison baseline (3 Large buses without LP optimization)
-  const naiveBusCost = 3 * 5_500_000; // 3 Bus 50 @ 5.5jt = 16.5jt
-  const optimalBusCost = 2 * 5_500_000 + 1_200_000; // 2 Bus 50 + 1 Hiace @ 1.2jt = 12.2jt
-  const transportSavings = naiveBusCost - optimalBusCost;
 
   return (
     <div className="flex flex-col gap-6">
@@ -126,27 +193,96 @@ export function ModuleSupplyChain({
             subtitle="Ubah parameter untuk menguji responsivitas DSS"
           />
           <div className="flex flex-col gap-4 mt-4">
-            {/* Participant count slider */}
+            {/* Direct participant count input, steppers, presets & synchronized slider */}
             <div>
-              <div className="flex justify-between items-center text-xs font-semibold mb-2">
-                <span className="text-[var(--text-secondary)]">Jumlah Rombongan</span>
-                <span className="px-2 py-0.5 rounded-md bg-[var(--brand-primary-subtle)] text-[var(--brand-primary-text)] font-bold text-sm">
-                  {participantCount} Orang
+              <div className="flex justify-between items-center text-xs font-semibold mb-1.5">
+                <label
+                  htmlFor="input-participant-count"
+                  className="text-[var(--text-secondary)] flex items-center gap-1.5"
+                >
+                  <Users className="w-3.5 h-3.5 text-indigo-500" />
+                  <span>Jumlah Rombongan</span>
+                </label>
+                <span className="text-[11px] text-[var(--text-muted)]">
+                  Ketik langsung atau geser
                 </span>
               </div>
-              <input
-                type="range"
-                min="20"
-                max="300"
-                step="5"
-                value={participantCount}
-                onChange={(e) => setParticipantCount(Number(e.target.value))}
-                className="w-full accent-[var(--brand-primary)] cursor-pointer"
-              />
-              <div className="flex justify-between text-[10px] text-[var(--text-muted)] mt-1">
-                <span>20 pax (Trip Kecil)</span>
-                <span>115 pax (Kasus Uji)</span>
-                <span>300 pax (Akbar)</span>
+
+              {/* Direct numeric input with steppers */}
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setParticipantCount((prev) => Math.max(1, (prev || 1) - 5))}
+                  className="w-10 h-10 rounded-xl border border-[var(--border-default)] bg-[var(--surface-card)] hover:bg-[var(--surface-subtle)] text-[var(--text-secondary)] flex items-center justify-center transition-all shadow-2xs active:scale-95"
+                  title="Kurangi 5 orang"
+                >
+                  <Minus className="w-4 h-4" />
+                </button>
+
+                <div className="relative flex-1">
+                  <input
+                    id="input-participant-count"
+                    type="number"
+                    min="1"
+                    max="1000"
+                    value={participantCount || ""}
+                    onChange={(e) => {
+                      const val = parseInt(e.target.value, 10);
+                      setParticipantCount(isNaN(val) ? 0 : Math.max(0, Math.min(1000, val)));
+                    }}
+                    onBlur={() => {
+                      if (!participantCount || participantCount < 1) {
+                        setParticipantCount(1);
+                      }
+                    }}
+                    placeholder="Contoh: 105"
+                    className="w-full h-10 pl-3.5 pr-14 text-sm font-bold rounded-xl border border-[var(--border-default)] bg-[var(--surface-card)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all shadow-2xs"
+                  />
+                  <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs font-medium text-[var(--text-muted)] pointer-events-none">
+                    Orang
+                  </span>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setParticipantCount((prev) => Math.min(1000, (prev || 0) + 5))}
+                  className="w-10 h-10 rounded-xl border border-[var(--border-default)] bg-[var(--surface-card)] hover:bg-[var(--surface-subtle)] text-[var(--text-secondary)] flex items-center justify-center transition-all shadow-2xs active:scale-95"
+                  title="Tambah 5 orang"
+                >
+                  <Plus className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Synchronized range slider */}
+              <div className="mt-2.5">
+                <input
+                  type="range"
+                  min="10"
+                  max={Math.max(300, safePax)}
+                  step="5"
+                  value={Math.min(safePax, Math.max(300, safePax))}
+                  onChange={(e) => setParticipantCount(Number(e.target.value))}
+                  className="w-full accent-[var(--brand-primary)] cursor-pointer"
+                />
+              </div>
+
+              {/* Quick Preset Buttons */}
+              <div className="flex flex-wrap items-center gap-1.5 mt-2">
+                <span className="text-[10px] text-[var(--text-subtle)] mr-0.5">Pilihan Cepat:</span>
+                {[20, 45, 85, 105, 115, 150, 250].map((preset) => (
+                  <button
+                    key={preset}
+                    type="button"
+                    onClick={() => setParticipantCount(preset)}
+                    className={`px-2 py-0.5 text-[11px] font-medium rounded-lg transition-all border ${
+                      participantCount === preset
+                        ? "bg-indigo-50 border-indigo-200 text-indigo-700 dark:bg-indigo-950/60 dark:border-indigo-800 dark:text-indigo-300 font-bold shadow-2xs"
+                        : "bg-[var(--surface-page)] border-[var(--border-subtle)] text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:border-[var(--border-default)]"
+                    }`}
+                  >
+                    {preset} Pax
+                  </button>
+                ))}
               </div>
             </div>
 
@@ -198,7 +334,7 @@ export function ModuleSupplyChain({
             <div className="bg-[var(--surface-subtle)] p-3 rounded-lg border border-[var(--border-subtle)] text-xs text-[var(--text-muted)] mt-2">
               <span className="font-semibold text-[var(--text-primary)]">Fungsi Kendala (LP Constraints):</span>
               <ul className="list-disc list-inside mt-1 space-y-0.5 text-[11px]">
-                <li>Total kapasitas vendor &ge; {participantCount} pax</li>
+                <li>Total kapasitas vendor &ge; {safePax} pax</li>
                 <li>Tingkat kualitas fasilitas &ge; {serviceLevel.toUpperCase()}</li>
                 <li>Total modal pengadaan &le; {formatRupiah(clientBudget)}</li>
               </ul>
@@ -206,10 +342,10 @@ export function ModuleSupplyChain({
           </div>
         </Card>
 
-        {/* Case Study Highlight: Idle Seat Comparison */}
+        {/* Case Study Highlight: Idle Seat Comparison (Dynamic according to participantCount) */}
         <Card className="lg:col-span-2">
           <CardHeader
-            title="Studi Kasus: Pemecahan Armada Bus Tanpa Kursi Kosong (115 Pax)"
+            title={`Studi Kasus: Pemecahan Armada Bus Tanpa Kursi Kosong (${safePax} Pax)`}
             subtitle="Perbandingan sewa manual vs formulasi matematis LP"
             action={
               <Badge variant="brand" icon={<Sparkles className="w-3 h-3" />}>
@@ -226,25 +362,27 @@ export function ModuleSupplyChain({
                   <span className="text-xs font-bold uppercase tracking-wider text-[var(--text-muted)]">
                     Metode Manual Konvensional
                   </span>
-                  <Badge variant="danger">Pemborosan 35 Kursi</Badge>
+                  <Badge variant={naiveIdleSeats > 0 ? "danger" : "neutral"}>
+                    {naiveIdleSeats > 0 ? `Pemborosan ${naiveIdleSeats} Kursi` : "Kapasitas Pas"}
+                  </Badge>
                 </div>
                 <h4 className="text-sm font-semibold text-[var(--text-primary)]">
-                  Menyewa 3 Bus Besar (Kapasitas 150 Kursi)
+                  Menyewa {naiveBusCount} Bus Besar (Kapasitas {naiveCapacity} Kursi)
                 </h4>
                 <div className="mt-3 space-y-1.5 text-xs text-[var(--text-secondary)]">
                   <div className="flex justify-between">
-                    <span>3 Bus Besar @ Rp 5.500.000:</span>
+                    <span>{naiveBusCount} Bus Besar @ Rp 5.500.000:</span>
                     <span className="font-semibold">{formatRupiah(naiveBusCost)}</span>
                   </div>
                   <div className="flex justify-between text-[var(--status-danger-text)]">
                     <span>Kursi Terbuang (Idle):</span>
-                    <span className="font-semibold">35 Kursi Kosong</span>
+                    <span className="font-semibold">{naiveIdleSeats} Kursi Kosong</span>
                   </div>
                 </div>
               </div>
 
               <div className="mt-4 pt-3 border-t border-[var(--border-subtle)] text-xs text-[var(--text-muted)]">
-                Admin biasa memilih 3 bus karena takut kurang, mengorbankan margin perusahaan.
+                Admin biasa memilih {naiveBusCount} bus besar karena takut kurang kapasitas, sehingga mengorbankan margin perusahaan.
               </div>
             </div>
 
@@ -255,23 +393,35 @@ export function ModuleSupplyChain({
                   <span className="text-xs font-bold uppercase tracking-wider text-[var(--brand-primary-text)]">
                     Rekomendasi Linear Programming
                   </span>
-                  <Badge variant="success">Presisi 100% Fit</Badge>
+                  <Badge variant="success">
+                    {optimalFleet.idleSeats === 0 ? "Presisi 100% Fit" : `Hemat (${optimalFleet.idleSeats} Kursi Sisa)`}
+                  </Badge>
                 </div>
                 <h4 className="text-sm font-semibold text-[var(--text-primary)]">
-                  Kombinasi 2 Bus Besar + 1 Hiace (115 Kursi)
+                  Kombinasi {optimalFleet.description} ({optimalFleet.totalSeats} Kursi)
                 </h4>
                 <div className="mt-3 space-y-1.5 text-xs text-[var(--text-secondary)]">
-                  <div className="flex justify-between">
-                    <span>2 Bus Besar @ Rp 5.500.000:</span>
-                    <span>Rp 11.000.000</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>1 Toyota Hiace @ Rp 1.200.000:</span>
-                    <span>Rp 1.200.000</span>
-                  </div>
+                  {optimalFleet.bus50 > 0 && (
+                    <div className="flex justify-between">
+                      <span>{optimalFleet.bus50} Bus Besar @ Rp 5.500.000:</span>
+                      <span>{formatRupiah(optimalFleet.bus50 * 5_500_000)}</span>
+                    </div>
+                  )}
+                  {optimalFleet.bus35 > 0 && (
+                    <div className="flex justify-between">
+                      <span>{optimalFleet.bus35} Bus Medium @ Rp 3.800.000:</span>
+                      <span>{formatRupiah(optimalFleet.bus35 * 3_800_000)}</span>
+                    </div>
+                  )}
+                  {optimalFleet.hiace15 > 0 && (
+                    <div className="flex justify-between">
+                      <span>{optimalFleet.hiace15} Toyota Hiace @ Rp 1.200.000:</span>
+                      <span>{formatRupiah(optimalFleet.hiace15 * 1_200_000)}</span>
+                    </div>
+                  )}
                   <div className="flex justify-between font-bold text-[var(--brand-primary-text)] pt-1 border-t border-[var(--brand-primary)]/20">
                     <span>Total Biaya Armada:</span>
-                    <span>{formatRupiah(optimalBusCost)}</span>
+                    <span>{formatRupiah(optimalFleet.totalCost)}</span>
                   </div>
                 </div>
               </div>
@@ -311,7 +461,7 @@ export function ModuleSupplyChain({
             </div>
           ) : (
             <div className="mt-6 p-4 rounded-xl border border-dashed border-[var(--border-default)] text-center text-xs text-[var(--text-muted)]">
-              Tekan tombol <span className="font-semibold text-[var(--text-primary)]">"Jalankan Solusi LP"</span> di atas untuk mengeksekusi perhitungan rantai pasok multi-vendor secara lengkap.
+              Tekan tombol <span className="font-semibold text-[var(--text-primary)]">"Jalankan Solver"</span> di atas untuk mengeksekusi perhitungan rantai pasok multi-vendor secara lengkap.
             </div>
           )}
         </Card>
