@@ -1,0 +1,22 @@
+{
+  "theme": {
+    "light": {
+      "surface": {
+        "page": { "$value": "{color.semantic.surface.page}", "$type": "color" },
+        "card": { "$value": "{color.semantic.surface.card}", "$type": "color" }
+      },
+      "brand": {
+        "primary": { "$value": "{color.semantic.brand.primary}", "$type": "color" }
+      }
+    },
+    "dark": {
+      "surface": {
+        "page": { "$value": "{color.primitive.slate.950}", "$type": "color" },
+        "card": { "$value": "{color.primitive.slate.900}", "$type": "color" }
+      },
+      "brand": {
+        "primary": { "$value": "{color.primitive.indigo.400}", "$type": "color" }
+      }
+    }
+  }
+}

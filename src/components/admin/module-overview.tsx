@@ -11,7 +11,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { StatCard } from "@/components/ui/stat-card";
-import { InteractiveRevenueChart } from "./interactive-revenue-chart";
+import { OptimizationDecisionCenter } from "./optimization-decision-center";
 import { PerformanceTable } from "./performance-table";
 import type { AdminTab } from "./admin-sidebar";
 
@@ -60,41 +60,41 @@ export function ModuleOverview({
 
   return (
     <div className="flex flex-col gap-6 max-w-7xl mx-auto">
-      {/* 4-Up KPI Stat Cards Row (Minimalist, Exactly like the Reference Image) */}
+      {/* 4-Up High-Impact DSS Tourism Operational KPIs */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
         <StatCard
-          label="Monthly Recurring Revenue"
-          value="Rp 1.004.079.000"
-          delta={{ value: "+5.7% vs bulan lalu", trend: "up" }}
-          tooltip="Total akumulasi omzet dari seluruh event dan paket perjalanan teroptimasi aktif."
+          label="Total Efisiensi Biaya (LP)"
+          value="Rp 142.850.000"
+          delta={{ value: "+19.4% vs pagu awal", trend: "up" }}
+          tooltip="Total penghematan anggaran belanja vendor pariwisata yang berhasil dicapai melalui optimasi matematis."
         />
 
         <StatCard
-          label="Biaya Pasok Vendor / Pax"
-          value="Rp 66.720"
-          delta={{ value: "-2.4% vs kuartal lalu", trend: "down", isPositiveGood: false }}
-          tooltip="Rata-rata pengeluaran modal vendor per orang setelah penentuan rute dan armada optimal."
+          label="Kapasitas Terkonsolidasi"
+          value="840 Pax"
+          delta={{ value: "+32.5% volume tier", trend: "up" }}
+          tooltip="Jumlah peserta rombongan yang berhasil digabungkan rutenya untuk mengamankan diskon skala grosir."
         />
 
         <StatCard
-          label="Idle Seat Rate (Churn)"
-          value="2.1%"
-          delta={{ value: "-0.3% vs target", trend: "down", isPositiveGood: false }}
-          tooltip="Persentase kapasitas kursi armada atau kamar hotel yang tidak terutilisasi."
+          label="Proyeksi Margin Peak Season"
+          value="Rp 385.400.000"
+          delta={{ value: "+18.2% vs target", trend: "up" }}
+          tooltip="Estimasi margin keuntungan bersih dari portofolio event terpilih menggunakan algoritma 0-1 Knapsack."
         />
 
         <StatCard
-          label="Customer Lifetime Value"
-          value="Rp 359.000.000"
-          delta={{ value: "+1.5% vs bulan lalu", trend: "up" }}
-          tooltip="Rata-rata nilai total pemesanan berulang per korporat dan agen mitra pariwisata."
+          label="Utilisasi Kru & Pemandu"
+          value="96.2%"
+          delta={{ value: "+4.1% kapasitas", trend: "up" }}
+          tooltip="Persentase pemandu wisata, fotografer, dan armada yang berhasil dialokasikan optimal tanpa konflik jadwal."
         />
       </div>
 
-      {/* Interactive Dual-Curve Spline Revenue & Margin Chart */}
-      <InteractiveRevenueChart />
+      {/* Replaced Obsolete Curve Chart with High-Value DSS Decision Cockpit */}
+      <OptimizationDecisionCenter onSelectTab={onSelectTab} />
 
-      {/* Clean Performance Table (Event & Package Optimization) */}
+      {/* Tour & Travel Package Optimization Table */}
       <PerformanceTable />
 
       {/* Minimalist Operations Research Solver Quick-Launchpad */}

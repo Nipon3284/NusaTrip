@@ -1,0 +1,32 @@
+{
+  "typography": {
+    "fontFamily": {
+      "sans": {
+        "$value": "var(--font-sans, Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif)",
+        "$type": "fontFamily",
+        "$description": "Standard UI sans-serif stack"
+      },
+      "mono": {
+        "$value": "var(--font-mono, 'JetBrains Mono', 'Fira Code', monospace)",
+        "$type": "fontFamily",
+        "$description": "Monospace font for numeric IDs and code metrics"
+      }
+    },
+    "fontSize": {
+      "xs": { "$value": "0.75rem", "$type": "dimension", "$description": "12px caption" },
+      "sm": { "$value": "0.875rem", "$type": "dimension", "$description": "14px body small" },
+      "base": { "$value": "1rem", "$type": "dimension", "$description": "16px body base" },
+      "lg": { "$value": "1.125rem", "$type": "dimension", "$description": "18px lead text" },
+      "xl": { "$value": "1.25rem", "$type": "dimension", "$description": "20px section subtitle" },
+      "2xl": { "$value": "1.5rem", "$type": "dimension", "$description": "24px card display" },
+      "3xl": { "$value": "1.875rem", "$type": "dimension", "$description": "30px section title" },
+      "4xl": { "$value": "2.25rem", "$type": "dimension", "$description": "36px hero metric" }
+    },
+    "fontWeight": {
+      "normal": { "$value": "400", "$type": "fontWeight" },
+      "medium": { "$value": "500", "$type": "fontWeight" },
+      "semibold": { "$value": "600", "$type": "fontWeight" },
+      "bold": { "$value": "700", "$type": "fontWeight" }
+    }
+  }
+}

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Search, SlidersHorizontal, Star, ArrowUpRight } from "lucide-react";
+import { Search, SlidersHorizontal, Star, ArrowUpRight, CheckCircle2 } from "lucide-react";
 import { Badge, type BadgeVariant } from "@/components/ui/badge";
 
 export interface PackagePerformance {
@@ -11,10 +11,11 @@ export interface PackagePerformance {
   categoryBadge: BadgeVariant;
   eventDate: string;
   rating: string;
-  quotaType: string;
+  optimizationScheme: string;
   pricePerPax: string;
   totalPax: number;
   totalRevenue: string;
+  costSavings: string;
   optimizationScore: number;
 }
 
@@ -26,10 +27,11 @@ const SAMPLE_PERFORMANCES: PackagePerformance[] = [
     categoryBadge: "cyan",
     eventDate: "24 Okt 2024",
     rating: "4.9/5",
-    quotaType: "Konsolidasi",
+    optimizationScheme: "Konsolidasi Kuota",
     pricePerPax: "Rp 3.850.000",
     totalPax: 48,
     totalRevenue: "Rp 184.800.000",
+    costSavings: "Rp 24.500.000",
     optimizationScore: 94,
   },
   {
@@ -39,10 +41,11 @@ const SAMPLE_PERFORMANCES: PackagePerformance[] = [
     categoryBadge: "rose",
     eventDate: "27 Okt 2024",
     rating: "4.8/5",
-    quotaType: "Open Trip",
+    optimizationScheme: "LP Simplex Pasok",
     pricePerPax: "Rp 1.450.000",
     totalPax: 120,
     totalRevenue: "Rp 174.000.000",
+    costSavings: "Rp 31.200.000",
     optimizationScore: 88,
   },
   {
@@ -52,10 +55,11 @@ const SAMPLE_PERFORMANCES: PackagePerformance[] = [
     categoryBadge: "cyan",
     eventDate: "02 Nov 2024",
     rating: "5.0/5",
-    quotaType: "Konsolidasi",
+    optimizationScheme: "Konsolidasi Kuota",
     pricePerPax: "Rp 7.900.000",
     totalPax: 36,
     totalRevenue: "Rp 284.400.000",
+    costSavings: "Rp 42.000.000",
     optimizationScore: 96,
   },
   {
@@ -65,10 +69,11 @@ const SAMPLE_PERFORMANCES: PackagePerformance[] = [
     categoryBadge: "purple",
     eventDate: "05 Nov 2024",
     rating: "4.9/5",
-    quotaType: "Corporate",
+    optimizationScheme: "Hungarian Penugasan",
     pricePerPax: "Rp 2.800.000",
     totalPax: 180,
     totalRevenue: "Rp 504.000.000",
+    costSavings: "Rp 58.400.000",
     optimizationScore: 91,
   },
   {
@@ -78,10 +83,11 @@ const SAMPLE_PERFORMANCES: PackagePerformance[] = [
     categoryBadge: "rose",
     eventDate: "10 Nov 2024",
     rating: "4.7/5",
-    quotaType: "Open Trip",
+    optimizationScheme: "Diet LP Katering",
     pricePerPax: "Rp 1.200.000",
     totalPax: 95,
     totalRevenue: "Rp 114.000.000",
+    costSavings: "Rp 12.800.000",
     optimizationScore: 78,
   },
   {
@@ -91,10 +97,11 @@ const SAMPLE_PERFORMANCES: PackagePerformance[] = [
     categoryBadge: "indigo",
     eventDate: "15 Nov 2024",
     rating: "4.9/5",
-    quotaType: "Corporate",
+    optimizationScheme: "Knapsack Peak Season",
     pricePerPax: "Rp 4.250.000",
     totalPax: 220,
     totalRevenue: "Rp 935.000.000",
+    costSavings: "Rp 112.500.000",
     optimizationScore: 92,
   },
   {
@@ -104,10 +111,11 @@ const SAMPLE_PERFORMANCES: PackagePerformance[] = [
     categoryBadge: "purple",
     eventDate: "20 Nov 2024",
     rating: "4.8/5",
-    quotaType: "Konsolidasi",
+    optimizationScheme: "Konsolidasi Kuota",
     pricePerPax: "Rp 3.400.000",
     totalPax: 42,
     totalRevenue: "Rp 142.800.000",
+    costSavings: "Rp 18.200.000",
     optimizationScore: 82,
   },
 ];
@@ -119,7 +127,8 @@ export function PerformanceTable() {
   const filteredItems = SAMPLE_PERFORMANCES.filter((item) => {
     const matchesSearch =
       item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.category.toLowerCase().includes(searchQuery.toLowerCase());
+      item.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      item.optimizationScheme.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesCategory =
       selectedCategory === "All" || item.category === selectedCategory;
     return matchesSearch && matchesCategory;
@@ -131,10 +140,10 @@ export function PerformanceTable() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 border-b border-[var(--border-subtle)]">
         <div>
           <h2 className="text-base font-semibold text-[var(--text-primary)] tracking-tight">
-            Performa Paket & Event Teroptimasi
+            Performa Paket & Status Optimasi Event
           </h2>
           <p className="text-xs text-[var(--text-muted)] mt-0.5">
-            Monitoring real-time kuota, omzet, dan skor efisiensi riset operasi
+            Daftar event aktif pariwisata teroptimasi dengan metrik efisiensi dan alokasi kuota
           </p>
         </div>
 
@@ -144,7 +153,7 @@ export function PerformanceTable() {
             <Search className="w-4 h-4 text-[var(--text-subtle)] absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
             <input
               type="text"
-              placeholder="Cari nama paket atau destinasi..."
+              placeholder="Cari paket, destinasi, atau skema..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="h-9 pl-9 pr-3.5 text-xs rounded-xl border border-[var(--border-default)] bg-[var(--surface-page)] text-[var(--text-primary)] placeholder:text-[var(--text-subtle)] focus:outline-none focus:ring-2 focus:ring-indigo-500 w-52 sm:w-64 transition-all"
@@ -163,7 +172,7 @@ export function PerformanceTable() {
             className="h-9 px-3.5 rounded-xl border border-[var(--border-default)] bg-[var(--surface-card)] text-xs font-medium text-[var(--text-secondary)] hover:bg-[var(--surface-subtle)] flex items-center gap-1.5 transition-colors shadow-2xs"
           >
             <SlidersHorizontal className="w-3.5 h-3.5 text-[var(--text-muted)]" />
-            <span>{selectedCategory === "All" ? "Filter" : selectedCategory}</span>
+            <span>{selectedCategory === "All" ? "Filter Kategori" : selectedCategory}</span>
           </button>
         </div>
       </div>
@@ -173,15 +182,15 @@ export function PerformanceTable() {
         <table className="w-full text-left border-collapse">
           <thead>
             <tr className="border-b border-[var(--border-subtle)] text-[11px] font-semibold text-[var(--text-muted)] uppercase tracking-wider">
-              <th className="py-3.5 px-3">Nama Paket</th>
+              <th className="py-3.5 px-3">Nama Paket Wisata</th>
               <th className="py-3.5 px-3">Kategori</th>
-              <th className="py-3.5 px-3">Tanggal Event</th>
+              <th className="py-3.5 px-3">Jadwal Event</th>
               <th className="py-3.5 px-3">Rating</th>
-              <th className="py-3.5 px-3">Tipe Akses</th>
+              <th className="py-3.5 px-3">Skema Optimasi LP</th>
               <th className="py-3.5 px-3 text-right">Tarif / Pax</th>
               <th className="py-3.5 px-3 text-right">Peserta</th>
-              <th className="py-3.5 px-3 text-right">Total Omzet</th>
-              <th className="py-3.5 px-3 text-center">Skor LP</th>
+              <th className="py-3.5 px-3 text-right">Efisiensi Hemat</th>
+              <th className="py-3.5 px-3 text-center">Skor Feasibility</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-[var(--border-subtle)] text-xs">
@@ -218,7 +227,7 @@ export function PerformanceTable() {
                   </td>
                   <td className="py-3.5 px-3">
                     <Badge variant="indigo" size="sm">
-                      {item.quotaType}
+                      {item.optimizationScheme}
                     </Badge>
                   </td>
                   <td className="py-3.5 px-3 text-right font-medium text-[var(--text-secondary)]">
@@ -227,20 +236,21 @@ export function PerformanceTable() {
                   <td className="py-3.5 px-3 text-right text-[var(--text-secondary)] font-medium">
                     {item.totalPax.toLocaleString("id-ID")}
                   </td>
-                  <td className="py-3.5 px-3 text-right font-semibold text-[var(--text-primary)]">
-                    {item.totalRevenue}
+                  <td className="py-3.5 px-3 text-right font-semibold text-emerald-600 dark:text-emerald-400">
+                    {item.costSavings}
                   </td>
                   <td className="py-3.5 px-3 text-center">
                     <span
-                      className={`font-bold text-xs ${
+                      className={`inline-flex items-center gap-1 font-bold text-xs px-2 py-0.5 rounded-full ${
                         item.optimizationScore >= 90
-                          ? "text-emerald-600 dark:text-emerald-400"
+                          ? "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300"
                           : item.optimizationScore >= 80
-                          ? "text-teal-600 dark:text-teal-400"
-                          : "text-amber-600 dark:text-amber-400"
+                          ? "bg-teal-50 dark:bg-teal-950/40 text-teal-700 dark:text-teal-300"
+                          : "bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300"
                       }`}
                     >
-                      {item.optimizationScore}
+                      <CheckCircle2 className="w-3 h-3" />
+                      {item.optimizationScore}%
                     </span>
                   </td>
                 </tr>

@@ -8,6 +8,7 @@ export type BadgeVariant =
   | "cyan"
   | "purple"
   | "rose"
+  | "emerald"
   | "success"
   | "warning"
   | "danger"
@@ -39,6 +40,8 @@ export function Badge({
       "bg-purple-50 text-purple-700 border border-purple-100/80 dark:bg-purple-950/50 dark:text-purple-300 dark:border-purple-900/40",
     rose:
       "bg-rose-50 text-rose-600 border border-rose-100/80 dark:bg-rose-950/50 dark:text-rose-300 dark:border-rose-900/40",
+    emerald:
+      "bg-emerald-50 text-emerald-700 border border-emerald-100/80 dark:bg-emerald-950/50 dark:text-emerald-300 dark:border-emerald-900/40",
     success:
       "bg-emerald-50 text-emerald-700 border border-emerald-100/80 dark:bg-emerald-950/50 dark:text-emerald-300 dark:border-emerald-900/40",
     warning:
