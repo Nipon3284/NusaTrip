@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+﻿import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
@@ -13,9 +13,13 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "NusaTrip DSS - Pusat Kendali & Optimasi Riset Operasi",
+  title: "NusaTrip - Tour & Event Organizer",
   description:
     "Platform Agregator Pariwisata & Event Organizer berbasis Decision Support System (Linear Programming)",
+  icons: {
+    icon: "/logo.png",
+    apple: "/logo.png",
+  },
 };
 
 export default function RootLayout({

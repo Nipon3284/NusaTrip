@@ -1,7 +1,9 @@
-"use client";
+﻿"use client";
 
 import React, { useState } from "react";
 import {
+  Briefcase,
+  Inbox,
   LayoutDashboard,
   Layers,
   Merge,
@@ -10,15 +12,16 @@ import {
   Compass,
   CreditCard,
   History,
-  Settings,
-  HelpCircle,
   ChevronLeft,
   ChevronRight,
-  ChevronDown,
-  Sparkles,
+  ShieldCheck,
 } from "lucide-react";
+import { useCustomerLeads } from "@/lib/data/tour-store";
+import { Logo } from "@/components/ui/logo";
 
 export type AdminTab =
+  | "cms-packages"
+  | "leads"
   | "overview"
   | "supply-chain"
   | "consolidation"
@@ -44,47 +47,62 @@ export function AdminSidebar({
   const [collapsedInternal, setCollapsedInternal] = useState(false);
   const collapsed = isCollapsed !== undefined && onToggleCollapse ? isCollapsed : collapsedInternal;
   const toggleCollapse = onToggleCollapse || (() => setCollapsedInternal((prev) => !prev));
+  const leads = useCustomerLeads();
+  const unhandledLeadsCount = leads.filter((l) => l.status === "baru").length;
 
-  const navItems: {
+  const cmsNavItems: {
     id: AdminTab;
     label: string;
     icon: React.ReactNode;
-    hasSubmenu?: boolean;
+    badgeCount?: number;
+  }[] = [
+    {
+      id: "cms-packages",
+      label: "Kelola Paket Wisata",
+      icon: <Briefcase className="w-[18px] h-[18px] shrink-0" />,
+    },
+    {
+      id: "leads",
+      label: "Inbox Permintaan Kustom",
+      icon: <Inbox className="w-[18px] h-[18px] shrink-0" />,
+      badgeCount: unhandledLeadsCount,
+    },
+  ];
+
+  const solverNavItems: {
+    id: AdminTab;
+    label: string;
+    icon: React.ReactNode;
   }[] = [
     {
       id: "overview",
-      label: "Overview",
+      label: "Overview DSS",
       icon: <LayoutDashboard className="w-[18px] h-[18px] shrink-0" />,
     },
     {
       id: "supply-chain",
       label: "Rantai Pasok",
       icon: <Layers className="w-[18px] h-[18px] shrink-0" />,
-      hasSubmenu: true,
     },
     {
       id: "consolidation",
       label: "Konsolidasi Event",
       icon: <Merge className="w-[18px] h-[18px] shrink-0" />,
-      hasSubmenu: true,
     },
     {
       id: "portfolio",
       label: "Seleksi Portofolio",
       icon: <PieChart className="w-[18px] h-[18px] shrink-0" />,
-      hasSubmenu: true,
     },
     {
       id: "assignment",
       label: "Penugasan Tim",
       icon: <Users className="w-[18px] h-[18px] shrink-0" />,
-      hasSubmenu: true,
     },
     {
       id: "itinerary-catering",
       label: "Itinerary & Katering",
       icon: <Compass className="w-[18px] h-[18px] shrink-0" />,
-      hasSubmenu: true,
     },
     {
       id: "payments",
@@ -100,131 +118,104 @@ export function AdminSidebar({
 
   return (
     <aside
-      className={`h-screen sticky top-0 bg-[var(--surface-card)] border-r border-[var(--border-subtle)] flex flex-col justify-between shrink-0 transition-all duration-300 z-30 ${
+      className={`h-screen bg-[var(--surface-card)] border-r border-[var(--border-subtle)] flex flex-col justify-between shrink-0 transition-all duration-300 z-30 ${
         collapsed ? "w-20" : "w-64"
       }`}
     >
-      {/* Top Brand Bar */}
       <div>
-        <div className="h-16 px-5 flex items-center justify-between border-b border-[var(--border-subtle)]">
+        <div className="h-16 px-4 flex items-center justify-between border-b border-[var(--border-subtle)]">
           {!collapsed ? (
-            <div className="flex items-center gap-3">
-              {/* Electric Violet Logo Squircle */}
-              <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-violet-500 text-white flex items-center justify-center font-extrabold text-sm shadow-sm shadow-indigo-500/25">
-                <Sparkles className="w-4 h-4 text-white" />
-              </div>
-              <span className="font-bold text-base text-[var(--text-primary)] tracking-tight">
-                NusaTrip
-              </span>
-            </div>
+            <Logo size="sm" subtitle="CMS & Solver Gate" href="/internal_gate" />
           ) : (
-            <div className="mx-auto">
-              <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-500 text-white flex items-center justify-center font-extrabold text-sm shadow-sm">
-                <Sparkles className="w-4 h-4 text-white" />
-              </div>
-            </div>
+            <Logo size="sm" showText={false} href="/internal_gate" className="mx-auto" />
           )}
 
-          {/* Collapse/Expand Toggle Button */}
           <button
             type="button"
             onClick={toggleCollapse}
-            aria-label={collapsed ? "Perlebar menu samping" : "Perkecil menu samping"}
-            className={`p-1.5 rounded-lg text-[var(--text-subtle)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-subtle)] transition-colors focus:outline-none ${
-              collapsed ? "hidden" : "block"
-            }`}
+            className="p-1.5 rounded-lg border border-[var(--border-subtle)] text-[var(--text-muted)] hover:bg-[var(--surface-subtle)] hover:text-[var(--text-primary)] transition-colors hidden sm:block"
+            aria-label={collapsed ? "Perluas menu sidebar" : "Ciutkan menu sidebar"}
           >
-            <ChevronLeft className="w-4 h-4" />
+            {collapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
           </button>
         </div>
 
-        {/* Navigation Items List */}
-        <nav className="p-3 space-y-1.5" aria-label="Menu Utama">
-          {navItems.map((item) => {
-            const isActive = currentTab === item.id;
-            return (
-              <button
-                key={item.id}
-                type="button"
-                onClick={() => onSelectTab(item.id)}
-                title={collapsed ? item.label : undefined}
-                className={`w-full flex items-center rounded-xl transition-all duration-150 group text-left ${
-                  collapsed ? "justify-center px-0 py-2.5" : "px-3.5 py-2.5 justify-between"
-                } ${
-                  isActive
-                    ? "bg-indigo-50 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300 font-semibold shadow-2xs"
-                    : "text-[var(--text-secondary)] hover:bg-[var(--surface-subtle)] hover:text-[var(--text-primary)] font-medium"
-                }`}
-              >
-                <div className="flex items-center gap-3">
-                  <span
-                    className={`${
+        <div className="p-3 space-y-6 overflow-y-auto max-h-[calc(100vh-8rem)]">
+          <div>
+            {!collapsed && (
+              <span className="text-[10px] font-bold text-indigo-600 uppercase tracking-wider px-3 mb-2 block">
+                Kelola Landing Page
+              </span>
+            )}
+            <nav className="space-y-1">
+              {cmsNavItems.map((item) => {
+                const isActive = currentTab === item.id;
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => onSelectTab(item.id)}
+                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all ${
                       isActive
-                        ? "text-indigo-600 dark:text-indigo-400"
-                        : "text-[var(--text-muted)] group-hover:text-[var(--text-primary)]"
+                        ? "bg-indigo-600 text-white shadow-sm shadow-indigo-500/25"
+                        : "text-[var(--text-secondary)] hover:bg-[var(--surface-subtle)] hover:text-[var(--text-primary)]"
                     }`}
                   >
                     {item.icon}
-                  </span>
-                  {!collapsed && (
-                    <span className="text-xs tracking-normal truncate">
-                      {item.label}
-                    </span>
-                  )}
-                </div>
+                    {!collapsed && (
+                      <span className="flex-1 text-left truncate">{item.label}</span>
+                    )}
+                    {!collapsed && item.badgeCount !== undefined && item.badgeCount > 0 && (
+                      <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-500 text-white">
+                        {item.badgeCount}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </nav>
+          </div>
 
-                {!collapsed && item.hasSubmenu && (
-                  <ChevronDown
-                    className={`w-3.5 h-3.5 transition-transform ${
+          <div>
+            {!collapsed && (
+              <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider px-3 mb-2 block">
+                Analisis Riset Operasi
+              </span>
+            )}
+            <nav className="space-y-1">
+              {solverNavItems.map((item) => {
+                const isActive = currentTab === item.id;
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => onSelectTab(item.id)}
+                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all ${
                       isActive
-                        ? "text-indigo-600 dark:text-indigo-400"
-                        : "text-[var(--text-subtle)] group-hover:text-[var(--text-muted)]"
+                        ? "bg-indigo-600 text-white shadow-sm shadow-indigo-500/25"
+                        : "text-[var(--text-secondary)] hover:bg-[var(--surface-subtle)] hover:text-[var(--text-primary)]"
                     }`}
-                  />
-                )}
-              </button>
-            );
-          })}
-        </nav>
+                  >
+                    {item.icon}
+                    {!collapsed && (
+                      <span className="flex-1 text-left truncate">{item.label}</span>
+                    )}
+                  </button>
+                );
+              })}
+            </nav>
+          </div>
+        </div>
       </div>
 
-      {/* Bottom Footer (Settings & Help) */}
-      <div className="p-3 border-t border-[var(--border-subtle)] space-y-1">
-        <button
-          type="button"
-          onClick={() => onSelectTab("overview")}
-          className={`w-full flex items-center rounded-xl py-2 text-[var(--text-secondary)] hover:bg-[var(--surface-subtle)] hover:text-[var(--text-primary)] transition-colors ${
-            collapsed ? "justify-center px-0" : "px-3.5 gap-3"
-          }`}
-          title={collapsed ? "Pengaturan" : undefined}
-        >
-          <Settings className="w-[18px] h-[18px] text-[var(--text-muted)]" />
-          {!collapsed && <span className="text-xs font-medium">Pengaturan</span>}
-        </button>
-
-        <button
-          type="button"
-          onClick={() => onSelectTab("overview")}
-          className={`w-full flex items-center rounded-xl py-2 text-[var(--text-secondary)] hover:bg-[var(--surface-subtle)] hover:text-[var(--text-primary)] transition-colors ${
-            collapsed ? "justify-center px-0" : "px-3.5 gap-3"
-          }`}
-          title={collapsed ? "Bantuan" : undefined}
-        >
-          <HelpCircle className="w-[18px] h-[18px] text-[var(--text-muted)]" />
-          {!collapsed && <span className="text-xs font-medium">Bantuan</span>}
-        </button>
-
-        {collapsed && (
-          <button
-            type="button"
-            onClick={toggleCollapse}
-            aria-label="Perlebar menu samping"
-            className="w-full flex items-center justify-center py-2 text-[var(--text-subtle)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-subtle)] rounded-xl transition-colors"
-          >
-            <ChevronRight className="w-4 h-4" />
-          </button>
-        )}
-      </div>
+      {!collapsed && (
+        <div className="p-4 border-t border-[var(--border-subtle)] bg-[var(--surface-subtle)]/40">
+          <div className="flex items-center gap-2 text-[11px] text-[var(--text-secondary)] font-medium">
+            <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+            <span>Sesi Internal Terverifikasi</span>
+          </div>
+        </div>
+      )}
     </aside>
   );
 }

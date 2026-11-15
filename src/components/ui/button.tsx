@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React, { forwardRef } from "react";
 import { Loader2 } from "lucide-react";
@@ -39,19 +39,16 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     },
     ref
   ) => {
-    // Base styles
-    const baseClasses = `inline-flex items-center justify-center font-medium transition-all duration-150 select-none focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${
+    const baseClasses = `inline-flex flex-row items-center justify-center font-medium transition-all duration-150 select-none focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${
       pill ? "rounded-full" : "rounded-xl"
     }`;
 
-    // Size variants (ensuring touch targets >= 40px)
     const sizeClasses = {
       sm: "h-9 px-3.5 text-xs gap-1.5",
       md: "h-10 px-4 text-sm gap-2",
       lg: "h-11 px-5 text-base gap-2.5",
     }[size];
 
-    // Variant styles matching design token intent
     const variantClasses = {
       primary:
         "bg-[var(--brand-primary)] text-white hover:bg-[var(--brand-primary-hover)] active:scale-[0.98] focus-visible:ring-[var(--brand-primary)] shadow-sm",
@@ -77,14 +74,14 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       >
         {isLoading ? (
           <>
-            <Loader2 className="w-4 h-4 animate-spin text-current" aria-hidden="true" />
+            <Loader2 className="w-4 h-4 animate-spin text-current shrink-0" aria-hidden="true" />
             <span>Memproses...</span>
           </>
         ) : (
           <>
-            {leftIcon && <span className="inline-flex shrink-0">{leftIcon}</span>}
-            <span>{children}</span>
-            {rightIcon && <span className="inline-flex shrink-0">{rightIcon}</span>}
+            {leftIcon && <span className="inline-flex shrink-0 items-center">{leftIcon}</span>}
+            {typeof children === "string" ? <span>{children}</span> : children}
+            {rightIcon && <span className="inline-flex shrink-0 items-center">{rightIcon}</span>}
           </>
         )}
       </button>
