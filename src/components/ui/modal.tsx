@@ -24,25 +24,40 @@ export function Modal({
 }: ModalProps) {
   const overlayRef = useRef<HTMLDivElement>(null);
   const previousActiveElement = useRef<HTMLElement | null>(null);
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
 
   useEffect(() => {
     if (isOpen) {
-      previousActiveElement.current = document.activeElement as HTMLElement;
+      // Simpan elemen yang aktif sebelum modal terbuka untuk dipulihkan saat ditutup
+      if (!previousActiveElement.current) {
+        previousActiveElement.current = document.activeElement as HTMLElement;
+      }
+
       const handleKeyDown = (e: KeyboardEvent) => {
         if (e.key === "Escape") {
-          onClose();
+          onCloseRef.current();
         }
       };
+
       document.addEventListener("keydown", handleKeyDown);
+      const originalOverflow = document.body.style.overflow;
       document.body.style.overflow = "hidden";
 
       return () => {
         document.removeEventListener("keydown", handleKeyDown);
-        document.body.style.overflow = "";
-        previousActiveElement.current?.focus();
+        document.body.style.overflow = originalOverflow;
+        // Hanya kembalikan fokus ke elemen pemicu saat modal benar-benar ditutup
+        if (
+          previousActiveElement.current &&
+          typeof previousActiveElement.current.focus === "function"
+        ) {
+          previousActiveElement.current.focus();
+          previousActiveElement.current = null;
+        }
       };
     }
-  }, [isOpen, onClose]);
+  }, [isOpen]);
 
   if (!isOpen) return null;
 

@@ -1,4 +1,4 @@
-﻿import { NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { INITIAL_LEADS, type CustomerLeadItem } from "@/lib/data/tour-data";
 
@@ -16,7 +16,19 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { name, phone, destination, category, pax, days, hotel, notes } = body;
+    const {
+      name,
+      institution,
+      phone,
+      destination,
+      category,
+      pax,
+      days,
+      hotel,
+      budget,
+      selectedSpots,
+      notes,
+    } = body;
 
     if (!name || !phone || !destination) {
       return NextResponse.json(
@@ -32,18 +44,31 @@ export async function POST(request: Request) {
     const now = new Date();
     const timeStr = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")} WIB`;
 
+    const estCostPerPax = (Number(days) || 2) * 380000;
+    const estTransport = (Number(days) || 2) * 5500000;
+    const bottomLineCost = Math.round(estCostPerPax * (Number(pax) || 20) + estTransport);
+    const parsedBudget = Number(budget) || Math.round(bottomLineCost * 1.25);
+
     const newLead: CustomerLeadItem = {
-      id: `LEAD-${Math.floor(1000 + Math.random() * 9000)}`,
+      id: body.id || `LEAD-${Math.floor(1000 + Math.random() * 9000)}`,
       name: cleanName,
+      institution: institution ? String(institution).slice(0, 120) : undefined,
       phone: cleanPhone,
       destination: String(destination),
       category: String(category || "Company Gathering & Outing"),
       pax: Math.max(1, Number(pax) || 1),
       days: Math.max(1, Number(days) || 1),
-      hotel: String(hotel || "Bintang 4"),
+      hotel: String(hotel || "Bintang 3"),
+      budget: parsedBudget,
+      customerBid: parsedBudget,
+      bottomLineCost,
+      targetMargin: Math.round(bottomLineCost * 0.22),
+      selectedSpots: Array.isArray(selectedSpots) ? selectedSpots : [],
       notes: cleanNotes,
       createdAt: timeStr,
       status: "baru",
+      pettyCashInitial: 1500000,
+      fieldExpenses: [],
     };
 
     serverLeads = [newLead, ...serverLeads];
@@ -61,10 +86,15 @@ export async function PATCH(request: Request) {
       return NextResponse.json({ error: "Akses tidak diizinkan" }, { status: 401 });
     }
 
-    const { id, status } = await request.json();
-    serverLeads = serverLeads.map((l) => (l.id === id ? { ...l, status } : l));
+    const updates = await request.json();
+    const { id } = updates;
+    if (!id) {
+      return NextResponse.json({ error: "ID lead diperlukan" }, { status: 400 });
+    }
+
+    serverLeads = serverLeads.map((l) => (l.id === id ? { ...l, ...updates } : l));
     return NextResponse.json({ success: true });
   } catch {
-    return NextResponse.json({ error: "Gagal memperbarui status lead" }, { status: 500 });
+    return NextResponse.json({ error: "Gagal memperbarui data lead" }, { status: 500 });
   }
 }

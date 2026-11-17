@@ -10,7 +10,6 @@ import {
   Wallet,
   Users2,
   CalendarDays,
-  Sparkles,
 } from "lucide-react";
 import { Card, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";

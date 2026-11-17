@@ -9,7 +9,6 @@ import {
   Star,
   Clock,
   MapPin,
-  Sparkles,
   DollarSign,
 } from "lucide-react";
 import { Card, CardHeader } from "@/components/ui/card";

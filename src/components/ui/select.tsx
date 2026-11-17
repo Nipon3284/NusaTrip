@@ -19,6 +19,7 @@ export interface CustomSelectProps {
   disabled?: boolean;
   error?: string;
   className?: string;
+  buttonClassName?: string;
   id?: string;
 }
 
@@ -31,6 +32,7 @@ export function CustomSelect({
   disabled = false,
   error,
   className = "",
+  buttonClassName = "",
   id,
 }: CustomSelectProps) {
   const generatedId = useId();
@@ -187,7 +189,7 @@ export function CustomSelect({
         aria-labelledby={label ? `${labelId} ${selectId}` : selectId}
         onClick={() => setIsOpen((prev) => !prev)}
         onKeyDown={handleKeyDown}
-        className={`w-full h-10 px-3.5 flex items-center justify-between text-left text-sm rounded-lg border transition-colors select-none focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary)] focus-visible:ring-offset-1 ${
+        className={`w-full h-10 px-3.5 flex items-center justify-between text-left text-sm rounded-lg border transition-colors select-none focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary)] focus-visible:ring-offset-1 ${buttonClassName} ${
           disabled
             ? "bg-[var(--surface-sunken)] text-[var(--text-muted)] border-[var(--border-subtle)] cursor-not-allowed"
             : error

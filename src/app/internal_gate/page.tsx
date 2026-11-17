@@ -1,10 +1,12 @@
-﻿"use client";
+"use client";
 
 import React, { useState, useEffect } from "react";
 import { AdminSidebar, type AdminTab } from "@/components/admin/admin-sidebar";
 import { ModuleCmsPackages } from "@/components/admin/module-cms-packages";
 import { ModuleLeads } from "@/components/admin/module-leads";
 import { ModuleOverview } from "@/components/admin/module-overview";
+import { ModuleMitraMapping } from "@/components/admin/module-mitra-mapping";
+import { ModuleLpOptimizer } from "@/components/admin/module-lp-optimizer";
 import { ModuleSupplyChain } from "@/components/admin/module-supply-chain";
 import { ModuleConsolidation } from "@/components/admin/module-consolidation";
 import { ModulePortfolio } from "@/components/admin/module-portfolio";
@@ -30,7 +32,7 @@ export default function InternalGatePage() {
   const [authError, setAuthError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const [currentTab, setCurrentTab] = useState<AdminTab>("cms-packages");
+  const [currentTab, setCurrentTab] = useState<AdminTab>("mitra-mapping");
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [logs, setLogs] = useState<OptimizationLog[]>([]);
 
@@ -85,15 +87,17 @@ export default function InternalGatePage() {
   };
 
   const tabLabels: Record<AdminTab, string> = {
-    "cms-packages": "Kelola Paket Wisata (Landing Page CMS)",
-    leads: "Inbox Permintaan Kustom Masuk",
     overview: "Analitik & Ringkasan Eksekutif",
+    "mitra-mapping": "Manajemen Zona Wilayah & Peta Mitra (GIS)",
+    "lp-optimizer": "Rekomendasi Paket Wisata Cerdas (Linear Programming)",
+    leads: "Inbox Permintaan Kustom & Negosiasi",
+    payments: "Simulasi Escrow & Kas Lapangan",
+    "cms-packages": "Kelola Paket Wisata (Landing Page CMS)",
     "supply-chain": "Rantai Pasok & Minimasi Biaya Vendor (Simplex)",
     consolidation: "Konsolidasi Event Wisata & Kapasitas Bus",
     portfolio: "Seleksi Portofolio Paket Wisata (Knapsack)",
     assignment: "Penugasan Kru & Tour Leader (Hungarian Method)",
     "itinerary-catering": "Rute Wisata & Katering Harian",
-    payments: "Simulasi Escrow & Pembayaran Bertahap",
     logs: "Audit Log & Jejak Riwayat Solver",
   };
 
@@ -217,15 +221,17 @@ export default function InternalGatePage() {
         </header>
 
         <main className="flex-1 p-5 sm:p-7 lg:p-8 overflow-y-auto">
-          {currentTab === "cms-packages" && <ModuleCmsPackages />}
-          {currentTab === "leads" && <ModuleLeads onSelectTab={setCurrentTab} />}
           {currentTab === "overview" && <ModuleOverview onSelectTab={setCurrentTab} />}
+          {currentTab === "mitra-mapping" && <ModuleMitraMapping />}
+          {currentTab === "lp-optimizer" && <ModuleLpOptimizer />}
+          {currentTab === "leads" && <ModuleLeads onSelectTab={setCurrentTab} />}
+          {currentTab === "payments" && <ModulePayments />}
+          {currentTab === "cms-packages" && <ModuleCmsPackages />}
           {currentTab === "supply-chain" && <ModuleSupplyChain onLogAdd={handleAddLog} />}
           {currentTab === "consolidation" && <ModuleConsolidation onLogAdd={handleAddLog} />}
           {currentTab === "portfolio" && <ModulePortfolio onLogAdd={handleAddLog} />}
           {currentTab === "assignment" && <ModuleAssignment onLogAdd={handleAddLog} />}
           {currentTab === "itinerary-catering" && <ModuleItineraryCatering onLogAdd={handleAddLog} />}
-          {currentTab === "payments" && <ModulePayments />}
           {currentTab === "logs" && <ModuleLogs logs={logs} />}
         </main>
       </div>

@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import React, { useState } from "react";
 import {
@@ -6,6 +6,8 @@ import {
   Inbox,
   LayoutDashboard,
   Layers,
+  MapPin,
+  Cpu,
   Merge,
   PieChart,
   Users,
@@ -15,20 +17,24 @@ import {
   ChevronLeft,
   ChevronRight,
   ShieldCheck,
+  AlertTriangle,
+  ChevronDown,
 } from "lucide-react";
 import { useCustomerLeads } from "@/lib/data/tour-store";
 import { Logo } from "@/components/ui/logo";
 
 export type AdminTab =
-  | "cms-packages"
-  | "leads"
   | "overview"
+  | "mitra-mapping"
+  | "lp-optimizer"
+  | "leads"
+  | "payments"
+  | "cms-packages"
   | "supply-chain"
   | "consolidation"
   | "portfolio"
   | "assignment"
   | "itinerary-catering"
-  | "payments"
   | "logs";
 
 interface AdminSidebarProps {
@@ -45,74 +51,93 @@ export function AdminSidebar({
   onToggleCollapse,
 }: AdminSidebarProps) {
   const [collapsedInternal, setCollapsedInternal] = useState(false);
+  const [showSimulations, setShowSimulations] = useState(false);
   const collapsed = isCollapsed !== undefined && onToggleCollapse ? isCollapsed : collapsedInternal;
   const toggleCollapse = onToggleCollapse || (() => setCollapsedInternal((prev) => !prev));
+  
   const leads = useCustomerLeads();
   const unhandledLeadsCount = leads.filter((l) => l.status === "baru").length;
+  const h7AlertCount = leads.filter((l) => l.h7Alert || l.status === "final_h7").length;
 
-  const cmsNavItems: {
+  // Primary Navigation Group: Matches User Mockup & Real Business Workflow
+  const mainNavItems: {
     id: AdminTab;
     label: string;
     icon: React.ReactNode;
     badgeCount?: number;
+    badgeVariant?: "rose" | "amber";
   }[] = [
     {
-      id: "cms-packages",
-      label: "Kelola Paket Wisata",
-      icon: <Briefcase className="w-[18px] h-[18px] shrink-0" />,
+      id: "overview",
+      label: "Dasbor & Radar H-7",
+      icon: <LayoutDashboard className="w-[18px] h-[18px] shrink-0" />,
+      badgeCount: h7AlertCount,
+      badgeVariant: "amber",
+    },
+    {
+      id: "mitra-mapping",
+      label: "Zona & Peta Mitra (GIS)",
+      icon: <MapPin className="w-[18px] h-[18px] shrink-0 text-cyan-500" />,
+    },
+    {
+      id: "lp-optimizer",
+      label: "Rekomendasi Paket LP",
+      icon: <Cpu className="w-[18px] h-[18px] shrink-0 text-indigo-500" />,
     },
     {
       id: "leads",
-      label: "Inbox Permintaan Kustom",
+      label: "Pesanan & Nego CRM",
       icon: <Inbox className="w-[18px] h-[18px] shrink-0" />,
       badgeCount: unhandledLeadsCount,
+      badgeVariant: "rose",
+    },
+    {
+      id: "payments",
+      label: "Keuangan & Kas Lapangan",
+      icon: <CreditCard className="w-[18px] h-[18px] shrink-0 text-emerald-500" />,
+    },
+    {
+      id: "cms-packages",
+      label: "Katalog Wisata Publik",
+      icon: <Briefcase className="w-[18px] h-[18px] shrink-0 text-amber-500" />,
     },
   ];
 
-  const solverNavItems: {
+  // Secondary Solvers (Audited - Kept as secondary tools without cluttering)
+  const simulationNavItems: {
     id: AdminTab;
     label: string;
     icon: React.ReactNode;
   }[] = [
     {
-      id: "overview",
-      label: "Overview DSS",
-      icon: <LayoutDashboard className="w-[18px] h-[18px] shrink-0" />,
-    },
-    {
       id: "supply-chain",
-      label: "Rantai Pasok",
-      icon: <Layers className="w-[18px] h-[18px] shrink-0" />,
+      label: "Rantai Pasok (ILP)",
+      icon: <Layers className="w-4 h-4 shrink-0 text-indigo-400" />,
     },
     {
       id: "consolidation",
-      label: "Konsolidasi Event",
-      icon: <Merge className="w-[18px] h-[18px] shrink-0" />,
+      label: "Konsolidasi Kuota",
+      icon: <Merge className="w-4 h-4 shrink-0 text-cyan-400" />,
     },
     {
       id: "portfolio",
-      label: "Seleksi Portofolio",
-      icon: <PieChart className="w-[18px] h-[18px] shrink-0" />,
+      label: "Portofolio Knapsack",
+      icon: <PieChart className="w-4 h-4 shrink-0 text-purple-400" />,
     },
     {
       id: "assignment",
-      label: "Penugasan Tim",
-      icon: <Users className="w-[18px] h-[18px] shrink-0" />,
+      label: "Penugasan Kru & SPK",
+      icon: <Users className="w-4 h-4 shrink-0 text-emerald-400" />,
     },
     {
       id: "itinerary-catering",
-      label: "Itinerary & Katering",
-      icon: <Compass className="w-[18px] h-[18px] shrink-0" />,
-    },
-    {
-      id: "payments",
-      label: "Simulasi Escrow",
-      icon: <CreditCard className="w-[18px] h-[18px] shrink-0" />,
+      label: "Rundown & Katering",
+      icon: <Compass className="w-4 h-4 shrink-0 text-amber-400" />,
     },
     {
       id: "logs",
       label: "Log Solver Audit",
-      icon: <History className="w-[18px] h-[18px] shrink-0" />,
+      icon: <History className="w-4 h-4 shrink-0 text-slate-400" />,
     },
   ];
 
@@ -125,7 +150,7 @@ export function AdminSidebar({
       <div>
         <div className="h-16 px-4 flex items-center justify-between border-b border-[var(--border-subtle)]">
           {!collapsed ? (
-            <Logo size="sm" subtitle="CMS & Solver Gate" href="/internal_gate" />
+            <Logo size="sm" subtitle="Admin & LP Solver" href="/internal_gate" />
           ) : (
             <Logo size="sm" showText={false} href="/internal_gate" className="mx-auto" />
           )}
@@ -140,15 +165,16 @@ export function AdminSidebar({
           </button>
         </div>
 
-        <div className="p-3 space-y-6 overflow-y-auto max-h-[calc(100vh-8rem)]">
+        <div className="p-3 space-y-5 overflow-y-auto max-h-[calc(100vh-8rem)]">
+          {/* Main Operational Navigation */}
           <div>
             {!collapsed && (
-              <span className="text-[10px] font-bold text-indigo-600 uppercase tracking-wider px-3 mb-2 block">
-                Kelola Landing Page
+              <span className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider px-3 mb-2 block">
+                Operasional & Mitra
               </span>
             )}
             <nav className="space-y-1">
-              {cmsNavItems.map((item) => {
+              {mainNavItems.map((item) => {
                 const isActive = currentTab === item.id;
                 return (
                   <button
@@ -157,16 +183,22 @@ export function AdminSidebar({
                     onClick={() => onSelectTab(item.id)}
                     className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all ${
                       isActive
-                        ? "bg-indigo-600 text-white shadow-sm shadow-indigo-500/25"
+                        ? "bg-indigo-600 text-white shadow-xs"
                         : "text-[var(--text-secondary)] hover:bg-[var(--surface-subtle)] hover:text-[var(--text-primary)]"
                     }`}
                   >
                     {item.icon}
-                    {!collapsed && (
-                      <span className="flex-1 text-left truncate">{item.label}</span>
-                    )}
-                    {!collapsed && item.badgeCount !== undefined && item.badgeCount > 0 && (
-                      <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-500 text-white">
+                    {!collapsed && <span className="truncate">{item.label}</span>}
+                    {!collapsed && typeof item.badgeCount === "number" && item.badgeCount > 0 && (
+                      <span
+                        className={`ml-auto text-[10px] font-bold px-1.5 py-0.2 rounded-full ${
+                          isActive
+                            ? "bg-white text-indigo-700"
+                            : item.badgeVariant === "amber"
+                            ? "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300"
+                            : "bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300"
+                        }`}
+                      >
                         {item.badgeCount}
                       </span>
                     )}
@@ -176,46 +208,63 @@ export function AdminSidebar({
             </nav>
           </div>
 
-          <div>
-            {!collapsed && (
-              <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider px-3 mb-2 block">
-                Analisis Riset Operasi
-              </span>
-            )}
-            <nav className="space-y-1">
-              {solverNavItems.map((item) => {
-                const isActive = currentTab === item.id;
-                return (
-                  <button
-                    key={item.id}
-                    type="button"
-                    onClick={() => onSelectTab(item.id)}
-                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all ${
-                      isActive
-                        ? "bg-indigo-600 text-white shadow-sm shadow-indigo-500/25"
-                        : "text-[var(--text-secondary)] hover:bg-[var(--surface-subtle)] hover:text-[var(--text-primary)]"
-                    }`}
-                  >
-                    {item.icon}
-                    {!collapsed && (
-                      <span className="flex-1 text-left truncate">{item.label}</span>
-                    )}
-                  </button>
-                );
-              })}
-            </nav>
-          </div>
+          {/* Expandable Secondary Simulators (Hasil Audit: Opsional & Rapi) */}
+          {!collapsed && (
+            <div className="pt-2 border-t border-[var(--border-subtle)]">
+              <button
+                type="button"
+                onClick={() => setShowSimulations(!showSimulations)}
+                className="w-full flex items-center justify-between px-3 py-1.5 text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider hover:text-[var(--text-primary)] transition-colors"
+              >
+                <span>Simulasi Solver Lanjutan</span>
+                <ChevronDown
+                  className={`w-3.5 h-3.5 transition-transform ${showSimulations ? "rotate-180" : ""}`}
+                />
+              </button>
+
+              {showSimulations && (
+                <nav className="space-y-0.5 mt-1 animate-in fade-in duration-150">
+                  {simulationNavItems.map((item) => {
+                    const isActive = currentTab === item.id;
+                    return (
+                      <button
+                        key={item.id}
+                        type="button"
+                        onClick={() => onSelectTab(item.id)}
+                        className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-medium transition-colors ${
+                          isActive
+                            ? "bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 font-bold"
+                            : "text-[var(--text-muted)] hover:bg-[var(--surface-subtle)] hover:text-[var(--text-primary)]"
+                        }`}
+                      >
+                        {item.icon}
+                        <span className="truncate">{item.label}</span>
+                      </button>
+                    );
+                  })}
+                </nav>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
-      {!collapsed && (
-        <div className="p-4 border-t border-[var(--border-subtle)] bg-[var(--surface-subtle)]/40">
-          <div className="flex items-center gap-2 text-[11px] text-[var(--text-secondary)] font-medium">
-            <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-            <span>Sesi Internal Terverifikasi</span>
+      {/* Footer Status */}
+      <div className="p-3 border-t border-[var(--border-subtle)]">
+        {!collapsed ? (
+          <div className="p-2.5 rounded-xl bg-[var(--surface-subtle)] text-[11px] text-[var(--text-secondary)] flex items-center gap-2">
+            <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
+            <div className="truncate">
+              <span className="font-semibold text-[var(--text-primary)] block">LP Engine: Siaga</span>
+              <span className="text-[10px] text-[var(--text-muted)]">Database Mitra Terhubung</span>
+            </div>
           </div>
-        </div>
-      )}
+        ) : (
+          <div className="flex justify-center p-2 text-emerald-600" title="Sesi Terotentikasi">
+            <ShieldCheck className="w-5 h-5" />
+          </div>
+        )}
+      </div>
     </aside>
   );
 }

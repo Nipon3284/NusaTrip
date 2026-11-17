@@ -1,4 +1,4 @@
-﻿import React from "react";
+import React from "react";
 import Link from "next/link";
 
 interface LogoProps {
@@ -7,6 +7,7 @@ interface LogoProps {
   subtitle?: string;
   className?: string;
   href?: string;
+  theme?: "auto" | "light" | "dark";
 }
 
 export function Logo({
@@ -15,13 +16,14 @@ export function Logo({
   subtitle = "Tour & Event Organizer",
   className = "",
   href = "/",
+  theme = "auto",
 }: LogoProps) {
   // Kalibrasi ukuran ikon: proporsional, tajam, dan tidak mendominasi layar
   const sizeClasses = {
     sm: "w-8 h-8 rounded-lg",
     md: "w-9 h-9 sm:w-10 sm:h-10 rounded-xl",
     lg: "w-12 h-12 sm:w-14 sm:h-14 rounded-2xl",
-    xl: "w-16 h-16 rounded-2xl",
+  xl: "w-16 h-16 rounded-2xl",
   };
 
   const titleSizes = {
@@ -38,6 +40,8 @@ export function Logo({
     xl: "text-sm tracking-normal",
   };
 
+  const isDark = theme === "dark";
+
   const content = (
     <div className={`flex items-center gap-2.5 sm:gap-3 select-none bg-transparent ${className}`}>
       <img
@@ -47,11 +51,19 @@ export function Logo({
       />
       {showText && (
         <div className="flex flex-col justify-center">
-          <span className={`tracking-tight text-[var(--text-primary)] leading-none ${titleSizes[size]}`}>
+          <span
+            className={`tracking-tight leading-none ${titleSizes[size]} ${
+              isDark ? "text-white drop-shadow-xs" : "text-[var(--text-primary)]"
+            }`}
+          >
             NusaTrip
           </span>
           {subtitle && (
-            <span className={`text-indigo-600 dark:text-indigo-400 font-semibold leading-tight mt-0.5 ${subtitleSizes[size]}`}>
+            <span
+              className={`font-semibold leading-tight mt-0.5 ${subtitleSizes[size]} ${
+                isDark ? "text-cyan-300" : "text-indigo-600 dark:text-indigo-400"
+              }`}
+            >
               {subtitle}
             </span>
           )}
