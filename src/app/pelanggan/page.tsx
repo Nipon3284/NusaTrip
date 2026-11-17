@@ -30,6 +30,7 @@ import {
   LogOut,
   User,
   Award,
+  Briefcase,
 } from "lucide-react";
 import { PublicNavbar } from "@/components/layout/public-navbar";
 import { PublicFooter } from "@/components/layout/public-footer";
@@ -44,10 +45,19 @@ import {
   updateRepaymentStatus,
   submitComponentRating,
   sendNegotiationMessage,
+  saveCustomerProfile,
   logoutCustomer,
   type CustomerLeadItem,
 } from "@/lib/data/tour-store";
 import { GoogleSSOModal } from "@/components/auth/google-sso-modal";
+
+const INSTANCE_CATEGORIES = [
+  { value: "Perusahaan (Corporate B2B)", label: "Perusahaan (Corporate B2B)" },
+  { value: "Sekolah / Kampus (Study Tour)", label: "Sekolah / Kampus (Study Tour)" },
+  { value: "Komunitas / Klub Hobi", label: "Komunitas / Klub Hobi" },
+  { value: "Instansi Medis / Rumah Sakit", label: "Instansi Medis / Rumah Sakit" },
+  { value: "Keluarga & Rombongan Pribadi", label: "Keluarga & Rombongan Pribadi" },
+];
 
 export default function CustomerDashboardPage() {
   const customerAuth = useCustomerAuth();
@@ -56,6 +66,33 @@ export default function CustomerDashboardPage() {
   const [activeTab, setActiveTab] = useState<
     "pesanan" | "command_center" | "negosiasi" | "dokumen" | "rating"
   >("pesanan");
+
+  // Profile completion recommendation states
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+  const [profilePicName, setProfilePicName] = useState("");
+  const [profilePhone, setProfilePhone] = useState("");
+  const [profileInstitution, setProfileInstitution] = useState("");
+  const [profilePicRole, setProfilePicRole] = useState("Ketua Panitia Rombongan");
+  const [profileCategory, setProfileCategory] = useState("Perusahaan (Corporate B2B)");
+  const [profileCity, setProfileCity] = useState("Yogyakarta");
+  const [profileNotes, setProfileNotes] = useState("");
+
+  // Auto-prompt profile completion if logged in but incomplete
+  React.useEffect(() => {
+    if (customerAuth) {
+      setProfilePicName(customerAuth.picName || customerAuth.name || "");
+      setProfilePhone(customerAuth.phone || "");
+      setProfileInstitution(customerAuth.institution || "");
+      setProfilePicRole(customerAuth.picRole || "Ketua Panitia Rombongan");
+      setProfileCategory(customerAuth.institutionCategory || "Perusahaan (Corporate B2B)");
+      setProfileCity(customerAuth.city || "Yogyakarta");
+      setProfileNotes(customerAuth.notes || "");
+
+      if (!customerAuth.isProfileComplete) {
+        setIsProfileModalOpen(true);
+      }
+    }
+  }, [customerAuth]);
 
   // Selected order for command center / negotiation
   const [selectedOrderId, setSelectedOrderId] = useState<string>("ORD-H0-4491");
@@ -178,38 +215,65 @@ export default function CustomerDashboardPage() {
           <>
             {/* Authenticated Customer Profile Header */}
             <div className="p-5 rounded-2xl border border-indigo-200 dark:border-indigo-800 bg-gradient-to-r from-indigo-50/80 via-white to-indigo-50/40 dark:from-indigo-950/40 dark:via-slate-900 dark:to-indigo-950/20 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-2xl bg-indigo-600 text-white flex items-center justify-center font-extrabold text-lg shadow-md shrink-0">
-                {customerAuth.name.charAt(0)}
-              </div>
-              <div>
-                <div className="flex items-center gap-2 flex-wrap">
-                  <h1 className="text-lg sm:text-xl font-black text-[var(--text-primary)]">
-                    {customerAuth.name}
-                  </h1>
-                  <Badge variant="brand" size="sm">
-                    {customerAuth.institution || "Pelanggan Terverifikasi"}
-                  </Badge>
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-2xl bg-indigo-600 text-white flex items-center justify-center font-extrabold text-lg shadow-md shrink-0">
+                  {customerAuth.name.charAt(0)}
                 </div>
-                <p className="text-xs text-[var(--text-muted)] font-mono mt-0.5">
-                  {customerAuth.email} &bull; Sesi Google SSO Aktif
-                </p>
+                <div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h1 className="text-lg sm:text-xl font-black text-[var(--text-primary)]">
+                      {customerAuth.name}
+                    </h1>
+                    <Badge variant="brand" size="sm">
+                      {customerAuth.institution || "Profil Belum Lengkap"}
+                    </Badge>
+                  </div>
+                  <p className="text-xs text-[var(--text-muted)] font-mono mt-0.5">
+                    {customerAuth.email} &bull; Akun Pelanggan Terverifikasi
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2.5 self-start sm:self-auto">
+                <Link href="/kustom-trip">
+                  <Button size="sm" variant="gradient" className="gap-1.5 text-xs">
+                    <PlusCircle className="w-3.5 h-3.5" />
+                    <span>Rancang Trip Baru</span>
+                  </Button>
+                </Link>
+                <Button size="sm" variant="outline" onClick={logoutCustomer} className="gap-1 text-xs">
+                  <LogOut className="w-3.5 h-3.5" />
+                  <span>Keluar</span>
+                </Button>
               </div>
             </div>
 
-            <div className="flex items-center gap-2.5 self-start sm:self-auto">
-              <Link href="/kustom-trip">
-                <Button size="sm" variant="gradient" className="gap-1.5 text-xs">
-                  <PlusCircle className="w-3.5 h-3.5" />
-                  <span>Rancang Trip Baru</span>
+            {/* Rekomendasi Lengkapi Data Diri & Profil Instansi */}
+            {!customerAuth.isProfileComplete && (
+              <div className="p-4 sm:p-5 rounded-2xl bg-indigo-50/70 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs animate-in fade-in">
+                <div className="flex items-start gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-indigo-600 text-white flex items-center justify-center shrink-0 shadow-xs">
+                    <ShieldCheck className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <strong className="text-xs sm:text-sm font-bold text-indigo-950 dark:text-indigo-100 block">
+                      Rekomendasi: Lengkapi Data Diri & Profil Instansi
+                    </strong>
+                    <p className="text-xs text-[var(--text-secondary)] mt-0.5 leading-relaxed">
+                      Lengkapi data penanggung jawab (PIC) dan profil lembaga Anda untuk mengaktifkan penerbitan resmi Surat Perintah Kerja (SPK), Faktur Pajak, dan Kartu VIP Clearance.
+                    </p>
+                  </div>
+                </div>
+                <Button
+                  size="sm"
+                  variant="gradient"
+                  onClick={() => setIsProfileModalOpen(true)}
+                  className="text-xs font-bold shrink-0 h-9 px-4"
+                >
+                  <span>Lengkapi Data Sekarang</span>
                 </Button>
-              </Link>
-              <Button size="sm" variant="outline" onClick={logoutCustomer} className="gap-1 text-xs">
-                <LogOut className="w-3.5 h-3.5" />
-                <span>Keluar</span>
-              </Button>
-            </div>
-          </div>
+              </div>
+            )}
 
         {/* Top Summary Metrics Cards */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
@@ -1030,6 +1094,182 @@ export default function CustomerDashboardPage() {
           isOpen={isGoogleModalOpen}
           onClose={() => setIsGoogleModalOpen(false)}
         />
+      )}
+
+      {/* Modal Rekomendasi Lengkapi Data Diri */}
+      {isProfileModalOpen && (
+        <Modal
+          isOpen={isProfileModalOpen}
+          onClose={() => setIsProfileModalOpen(false)}
+          title="Rekomendasi: Lengkapi Data Diri & Profil Instansi"
+          maxWidth="md"
+        >
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (!profilePicName.trim() || !profilePhone.trim() || !profileInstitution.trim()) {
+                alert("Mohon lengkapi Nama Penanggung Jawab, Nomor WhatsApp, dan Nama Instansi.");
+                return;
+              }
+              saveCustomerProfile({
+                picName: profilePicName.trim(),
+                name: profilePicName.trim(),
+                phone: profilePhone.trim(),
+                institution: profileInstitution.trim(),
+                picRole: profilePicRole.trim(),
+                institutionCategory: profileCategory,
+                city: profileCity.trim(),
+                notes: profileNotes.trim(),
+              });
+              setIsProfileModalOpen(false);
+            }}
+            className="space-y-3.5 text-xs"
+          >
+            <div className="p-3 rounded-xl bg-indigo-50/70 dark:bg-indigo-950/40 border border-indigo-100 dark:border-indigo-900 text-[11px] text-[var(--text-secondary)]">
+              <span className="font-bold text-indigo-900 dark:text-indigo-200 block">
+                Selamat Datang di NusaTrip, {customerAuth?.name || "Pelanggan"}!
+              </span>
+              <p className="text-[10px] text-[var(--text-muted)] mt-0.5">
+                Data resmi di bawah ini diperlukan untuk penerbitan Surat Perintah Kerja (SPK), Faktur Pajak, dan Kartu VIP rombongan.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-semibold text-[var(--text-secondary)] mb-1">
+                  Nama Penanggung Jawab (PIC) *
+                </label>
+                <div className="relative">
+                  <User className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" />
+                  <input
+                    type="text"
+                    required
+                    value={profilePicName}
+                    onChange={(e) => setProfilePicName(e.target.value)}
+                    placeholder="Nama lengkap PIC"
+                    className="w-full h-9 pl-9 pr-3 rounded-xl border border-[var(--border-default)] bg-[var(--surface-page)] text-xs text-[var(--text-primary)] font-bold focus:border-indigo-600 focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-[var(--text-secondary)] mb-1">
+                  Nomor WhatsApp PIC Aktif *
+                </label>
+                <div className="relative">
+                  <Phone className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" />
+                  <input
+                    type="text"
+                    required
+                    value={profilePhone}
+                    onChange={(e) => setProfilePhone(e.target.value)}
+                    placeholder="Contoh: 081234567890"
+                    className="w-full h-9 pl-9 pr-3 rounded-xl border border-[var(--border-default)] bg-[var(--surface-page)] text-xs text-[var(--text-primary)] font-bold focus:border-indigo-600 focus:outline-none"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-semibold text-[var(--text-secondary)] mb-1">
+                  Nama Instansi / Lembaga / Sekolah *
+                </label>
+                <div className="relative">
+                  <Building2 className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" />
+                  <input
+                    type="text"
+                    required
+                    value={profileInstitution}
+                    onChange={(e) => setProfileInstitution(e.target.value)}
+                    placeholder="Contoh: PT Telkom Akses"
+                    className="w-full h-9 pl-9 pr-3 rounded-xl border border-[var(--border-default)] bg-[var(--surface-page)] text-xs text-[var(--text-primary)] font-bold focus:border-indigo-600 focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-[var(--text-secondary)] mb-1">
+                  Jabatan / Posisi PIC
+                </label>
+                <div className="relative">
+                  <Briefcase className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" />
+                  <input
+                    type="text"
+                    value={profilePicRole}
+                    onChange={(e) => setProfilePicRole(e.target.value)}
+                    placeholder="Contoh: HRD Manager / Panitia"
+                    className="w-full h-9 pl-9 pr-3 rounded-xl border border-[var(--border-default)] bg-[var(--surface-page)] text-xs text-[var(--text-primary)] focus:border-indigo-600 focus:outline-none"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-semibold text-[var(--text-secondary)] mb-1">
+                  Kategori Instansi / Rombongan
+                </label>
+                <CustomSelect
+                  value={profileCategory}
+                  onChange={setProfileCategory}
+                  options={INSTANCE_CATEGORIES}
+                  buttonClassName="w-full h-9 text-xs"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-[var(--text-secondary)] mb-1">
+                  Kota Domisili Instansi
+                </label>
+                <div className="relative">
+                  <MapPin className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" />
+                  <input
+                    type="text"
+                    value={profileCity}
+                    onChange={(e) => setProfileCity(e.target.value)}
+                    placeholder="Contoh: Jakarta Selatan / Bandung"
+                    className="w-full h-9 pl-9 pr-3 rounded-xl border border-[var(--border-default)] bg-[var(--surface-page)] text-xs text-[var(--text-primary)] focus:border-indigo-600 focus:outline-none"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-[var(--text-secondary)] mb-1">
+                Catatan / Kebutuhan Khusus Rombongan (Opsional)
+              </label>
+              <textarea
+                rows={2}
+                value={profileNotes}
+                onChange={(e) => setProfileNotes(e.target.value)}
+                placeholder="Preferensi konsumsi halal, bus eksekutif, armada cadangan..."
+                className="w-full p-2.5 rounded-xl border border-[var(--border-default)] bg-[var(--surface-page)] text-xs text-[var(--text-primary)] focus:border-indigo-600 focus:outline-none"
+              />
+            </div>
+
+            <div className="flex justify-between items-center pt-2 border-t border-[var(--border-subtle)]">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setIsProfileModalOpen(false)}
+                className="text-xs"
+              >
+                Nanti Saja
+              </Button>
+              <Button
+                type="submit"
+                variant="gradient"
+                size="sm"
+                className="text-xs font-bold gap-1"
+              >
+                <span>Simpan Data Diri</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </Button>
+            </div>
+          </form>
+        </Modal>
       )}
     </div>
   );

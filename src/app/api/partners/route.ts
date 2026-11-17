@@ -1,33 +1,46 @@
 import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
-import { INITIAL_PARTNERS, type PartnerItem } from "@/lib/data/tour-data";
+import { type PartnerItem } from "@/lib/data/tour-data";
+import { checkAdminSession } from "@/lib/auth/session";
+import { getDbPartners, saveDbPartner, deleteDbPartner } from "@/lib/supabase/db";
 
-let serverPartners: PartnerItem[] = [...INITIAL_PARTNERS];
+let memoryPartners: PartnerItem[] | null = null;
 
 export async function GET() {
-  return NextResponse.json({ partners: serverPartners });
+  try {
+    if (!memoryPartners) {
+      memoryPartners = await getDbPartners();
+    }
+    return NextResponse.json({ partners: memoryPartners });
+  } catch {
+    return NextResponse.json({ error: "Gagal memuat data mitra" }, { status: 500 });
+  }
 }
 
 export async function POST(request: Request) {
   try {
-    const cookieStore = await cookies();
-    const session = cookieStore.get("nusatrip_session");
-    if (!session || session.value !== "nusatrip_internal_auth_token_2026") {
+    const isAdmin = await checkAdminSession();
+    if (!isAdmin) {
       return NextResponse.json({ error: "Akses tidak diizinkan" }, { status: 401 });
     }
 
     const body = await request.json();
-    if (Array.isArray(body)) {
-      serverPartners = body;
-      return NextResponse.json({ success: true, count: serverPartners.length });
+    if (!memoryPartners) {
+      memoryPartners = await getDbPartners();
     }
 
-    if (body && typeof body === "object" && body.name) {
+    if (Array.isArray(body)) {
+      memoryPartners = body;
+      return NextResponse.json({ success: true, count: memoryPartners.length });
+    }
+
+    if (body && typeof body === "object" && (body.name || body.nama)) {
       const newPartner: PartnerItem = {
         ...body,
+        name: body.name || body.nama,
         id: body.id || `pt-${Date.now()}`,
       };
-      serverPartners = [newPartner, ...serverPartners];
+      memoryPartners = [newPartner, ...memoryPartners];
+      await saveDbPartner(newPartner);
       return NextResponse.json({ success: true, partner: newPartner });
     }
 
@@ -39,9 +52,8 @@ export async function POST(request: Request) {
 
 export async function PATCH(request: Request) {
   try {
-    const cookieStore = await cookies();
-    const session = cookieStore.get("nusatrip_session");
-    if (!session || session.value !== "nusatrip_internal_auth_token_2026") {
+    const isAdmin = await checkAdminSession();
+    if (!isAdmin) {
       return NextResponse.json({ error: "Akses tidak diizinkan" }, { status: 401 });
     }
 
@@ -50,8 +62,16 @@ export async function PATCH(request: Request) {
       return NextResponse.json({ error: "Parameter id atau updates tidak lengkap" }, { status: 400 });
     }
 
-    serverPartners = serverPartners.map((p) => (p.id === id ? { ...p, ...updates } : p));
-    const updated = serverPartners.find((p) => p.id === id);
+    if (!memoryPartners) {
+      memoryPartners = await getDbPartners();
+    }
+
+    memoryPartners = memoryPartners.map((p) => (p.id === id ? { ...p, ...updates } : p));
+    const updated = memoryPartners.find((p) => p.id === id);
+
+    if (updated) {
+      await saveDbPartner(updated);
+    }
 
     return NextResponse.json({ success: true, partner: updated });
   } catch {
@@ -61,9 +81,8 @@ export async function PATCH(request: Request) {
 
 export async function DELETE(request: Request) {
   try {
-    const cookieStore = await cookies();
-    const session = cookieStore.get("nusatrip_session");
-    if (!session || session.value !== "nusatrip_internal_auth_token_2026") {
+    const isAdmin = await checkAdminSession();
+    if (!isAdmin) {
       return NextResponse.json({ error: "Akses tidak diizinkan" }, { status: 401 });
     }
 
@@ -73,7 +92,13 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ error: "Parameter id wajib disertakan" }, { status: 400 });
     }
 
-    serverPartners = serverPartners.filter((p) => p.id !== id);
+    if (!memoryPartners) {
+      memoryPartners = await getDbPartners();
+    }
+
+    memoryPartners = memoryPartners.filter((p) => p.id !== id);
+    await deleteDbPartner(id);
+
     return NextResponse.json({ success: true, deletedId: id });
   } catch {
     return NextResponse.json({ error: "Gagal menghapus mitra" }, { status: 500 });

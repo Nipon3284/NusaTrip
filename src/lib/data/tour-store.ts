@@ -31,6 +31,39 @@ export const subscribeTourData = (callback: () => void) => {
   };
 };
 
+// Sinkronisasi latar belakang dengan server saat client inisialisasi
+if (typeof window !== "undefined") {
+  fetch("/api/packages")
+    .then((r) => r.json())
+    .then((d) => {
+      if (d && Array.isArray(d.packages) && d.packages.length > 0) {
+        localStorage.setItem("nusatrip_packages", JSON.stringify(d.packages));
+        emitChange();
+      }
+    })
+    .catch(() => {});
+
+  fetch("/api/partners")
+    .then((r) => r.json())
+    .then((d) => {
+      if (d && Array.isArray(d.partners) && d.partners.length > 0) {
+        localStorage.setItem("nusatrip_partners", JSON.stringify(d.partners));
+        emitChange();
+      }
+    })
+    .catch(() => {});
+
+  fetch("/api/zones")
+    .then((r) => r.json())
+    .then((d) => {
+      if (d && Array.isArray(d.zones) && d.zones.length > 0) {
+        localStorage.setItem("nusatrip_zones", JSON.stringify(d.zones));
+        emitChange();
+      }
+    })
+    .catch(() => {});
+}
+
 // ─── PACKAGES STORE ───────────────────────────────────────────
 let cachedPackagesRaw: string | null = null;
 let cachedPackagesList: TourPackageItem[] = INITIAL_PACKAGES;
@@ -237,6 +270,12 @@ export const savePartners = (partners: PartnerItem[]) => {
   if (typeof window === "undefined") return;
   localStorage.setItem("nusatrip_partners", JSON.stringify(partners));
   emitChange();
+
+  fetch("/api/partners", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(partners),
+  }).catch(() => {});
 };
 
 export const addPartner = (partner: Omit<PartnerItem, "id">) => {
@@ -295,6 +334,12 @@ export const saveZones = (zones: ZoneItem[]) => {
   if (typeof window === "undefined") return;
   localStorage.setItem("nusatrip_zones", JSON.stringify(zones));
   emitChange();
+
+  fetch("/api/zones", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(zones),
+  }).catch(() => {});
 };
 
 export const addZone = (zone: Omit<ZoneItem, "id">) => {

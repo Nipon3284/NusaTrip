@@ -1,25 +1,36 @@
 import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
-import { INITIAL_ZONES, type ZoneItem } from "@/lib/data/tour-data";
+import { type ZoneItem } from "@/lib/data/tour-data";
+import { checkAdminSession } from "@/lib/auth/session";
+import { getDbZones, saveDbZone, deleteDbZone } from "@/lib/supabase/db";
 
-let serverZones: ZoneItem[] = [...INITIAL_ZONES];
+let memoryZones: ZoneItem[] | null = null;
 
 export async function GET() {
-  return NextResponse.json({ zones: serverZones });
+  try {
+    if (!memoryZones) {
+      memoryZones = await getDbZones();
+    }
+    return NextResponse.json({ zones: memoryZones });
+  } catch {
+    return NextResponse.json({ error: "Gagal memuat data zona" }, { status: 500 });
+  }
 }
 
 export async function POST(request: Request) {
   try {
-    const cookieStore = await cookies();
-    const session = cookieStore.get("nusatrip_session");
-    if (!session || session.value !== "nusatrip_internal_auth_token_2026") {
+    const isAdmin = await checkAdminSession();
+    if (!isAdmin) {
       return NextResponse.json({ error: "Akses tidak diizinkan" }, { status: 401 });
     }
 
     const body = await request.json();
+    if (!memoryZones) {
+      memoryZones = await getDbZones();
+    }
+
     if (Array.isArray(body)) {
-      serverZones = body;
-      return NextResponse.json({ success: true, count: serverZones.length });
+      memoryZones = body;
+      return NextResponse.json({ success: true, count: memoryZones.length });
     }
 
     if (body && typeof body === "object" && body.name) {
@@ -27,7 +38,8 @@ export async function POST(request: Request) {
         ...body,
         id: body.id || `zn-${Date.now()}`,
       };
-      serverZones = [...serverZones, newZone];
+      memoryZones = [...memoryZones, newZone];
+      await saveDbZone(newZone);
       return NextResponse.json({ success: true, zone: newZone });
     }
 
@@ -39,9 +51,8 @@ export async function POST(request: Request) {
 
 export async function PATCH(request: Request) {
   try {
-    const cookieStore = await cookies();
-    const session = cookieStore.get("nusatrip_session");
-    if (!session || session.value !== "nusatrip_internal_auth_token_2026") {
+    const isAdmin = await checkAdminSession();
+    if (!isAdmin) {
       return NextResponse.json({ error: "Akses tidak diizinkan" }, { status: 401 });
     }
 
@@ -50,8 +61,16 @@ export async function PATCH(request: Request) {
       return NextResponse.json({ error: "Parameter id atau updates tidak lengkap" }, { status: 400 });
     }
 
-    serverZones = serverZones.map((z) => (z.id === id ? { ...z, ...updates } : z));
-    const updated = serverZones.find((z) => z.id === id);
+    if (!memoryZones) {
+      memoryZones = await getDbZones();
+    }
+
+    memoryZones = memoryZones.map((z) => (z.id === id ? { ...z, ...updates } : z));
+    const updated = memoryZones.find((z) => z.id === id);
+
+    if (updated) {
+      await saveDbZone(updated);
+    }
 
     return NextResponse.json({ success: true, zone: updated });
   } catch {
@@ -61,9 +80,8 @@ export async function PATCH(request: Request) {
 
 export async function DELETE(request: Request) {
   try {
-    const cookieStore = await cookies();
-    const session = cookieStore.get("nusatrip_session");
-    if (!session || session.value !== "nusatrip_internal_auth_token_2026") {
+    const isAdmin = await checkAdminSession();
+    if (!isAdmin) {
       return NextResponse.json({ error: "Akses tidak diizinkan" }, { status: 401 });
     }
 
@@ -73,7 +91,13 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ error: "Parameter id wajib disertakan" }, { status: 400 });
     }
 
-    serverZones = serverZones.filter((z) => z.id !== id);
+    if (!memoryZones) {
+      memoryZones = await getDbZones();
+    }
+
+    memoryZones = memoryZones.filter((z) => z.id !== id);
+    await deleteDbZone(id);
+
     return NextResponse.json({ success: true, deletedId: id });
   } catch {
     return NextResponse.json({ error: "Gagal menghapus zona" }, { status: 500 });

@@ -1,25 +1,34 @@
 ﻿import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
-import { INITIAL_PACKAGES, type TourPackageItem } from "@/lib/data/tour-data";
+import { type TourPackageItem } from "@/lib/data/tour-data";
+import { checkAdminSession } from "@/lib/auth/session";
+import { getDbPackages, saveDbPackages } from "@/lib/supabase/db";
 
-let serverPackages: TourPackageItem[] = [...INITIAL_PACKAGES];
+let memoryPackages: TourPackageItem[] | null = null;
 
 export async function GET() {
-  return NextResponse.json({ packages: serverPackages });
+  try {
+    if (!memoryPackages) {
+      memoryPackages = await getDbPackages();
+    }
+    return NextResponse.json({ packages: memoryPackages });
+  } catch {
+    return NextResponse.json({ error: "Gagal memuat paket wisata" }, { status: 500 });
+  }
 }
 
 export async function POST(request: Request) {
   try {
-    const cookieStore = await cookies();
-    const session = cookieStore.get("nusatrip_session");
-    if (!session || session.value !== "nusatrip_internal_auth_token_2026") {
+    const isAdmin = await checkAdminSession();
+    if (!isAdmin) {
       return NextResponse.json({ error: "Akses tidak diizinkan" }, { status: 401 });
     }
 
     const body = await request.json();
     if (Array.isArray(body)) {
-      serverPackages = body;
-      return NextResponse.json({ success: true, count: serverPackages.length });
+      memoryPackages = body;
+      // Sinkronisasi asinkron ke database Supabase
+      await saveDbPackages(body);
+      return NextResponse.json({ success: true, count: memoryPackages.length });
     }
 
     return NextResponse.json({ error: "Format data tidak valid" }, { status: 400 });

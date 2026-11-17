@@ -48,7 +48,8 @@ const NAV_LINKS = [
 export function PublicNavbar() {
   const pathname = usePathname();
   const customerAuth = useCustomerAuth();
-  const [isGoogleModalOpen, setIsGoogleModalOpen] = useState(false);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [authMode, setAuthMode] = useState<"masuk" | "daftar">("masuk");
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   // Gated Navigation: Lacak Pesanan & Dasbor Pelanggan only available for logged-in customers
@@ -121,32 +122,52 @@ export function PublicNavbar() {
                 </button>
               </div>
             ) : (
-              <Button
-                size="sm"
-                variant="gradient"
-                onClick={() => setIsGoogleModalOpen(true)}
-                className="gap-2 text-xs h-8 sm:h-9 shadow-xs"
-              >
-                <GoogleGIcon className="w-3.5 h-3.5 shrink-0" />
-                <span>Masuk Akun Google</span>
-              </Button>
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    setAuthMode("masuk");
+                    setIsAuthModalOpen(true);
+                  }}
+                  className="text-xs h-8 sm:h-9 px-3 sm:px-4 font-bold rounded-xl border-[var(--border-default)] text-[var(--text-primary)] hover:border-indigo-600 hover:text-indigo-600"
+                >
+                  <span>Masuk</span>
+                </Button>
+                <Button
+                  size="sm"
+                  variant="gradient"
+                  onClick={() => {
+                    setAuthMode("daftar");
+                    setIsAuthModalOpen(true);
+                  }}
+                  className="text-xs h-8 sm:h-9 px-3 sm:px-4 font-bold rounded-xl shadow-xs"
+                >
+                  <span>Daftar</span>
+                </Button>
+              </div>
             )}
 
             {/* Mobile Hamburger Button */}
             <button
               type="button"
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="lg:hidden p-2 rounded-xl border border-[var(--border-subtle)] text-[var(--text-secondary)] hover:text-indigo-600 focus:outline-none"
-              aria-label="Toggle Menu"
+              className="lg:hidden p-2 rounded-xl border border-[var(--border-subtle)] text-[var(--text-secondary)] hover:text-indigo-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+              aria-label={isMobileMenuOpen ? "Tutup menu navigasi" : "Buka menu navigasi"}
+              aria-expanded={isMobileMenuOpen}
+              aria-controls="mobile-nav-panel"
             >
-              {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+              {isMobileMenuOpen ? <X className="w-5 h-5" aria-hidden="true" /> : <Menu className="w-5 h-5" aria-hidden="true" />}
             </button>
           </div>
         </div>
 
         {/* Mobile Dropdown Menu */}
         {isMobileMenuOpen && (
-          <div className="lg:hidden border-t border-[var(--border-subtle)] bg-[var(--surface-card)] px-4 py-3 space-y-1 animate-in slide-in-from-top-2 duration-200">
+          <div
+            id="mobile-nav-panel"
+            className="lg:hidden border-t border-[var(--border-subtle)] bg-[var(--surface-card)] px-4 py-3 space-y-2 animate-in slide-in-from-top-2 duration-200"
+          >
             {filteredNavLinks.map((item) => {
               const isActive =
                 item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
@@ -169,15 +190,45 @@ export function PublicNavbar() {
                 </Link>
               );
             })}
+
+            {!customerAuth && (
+              <div className="flex items-center gap-2 pt-2 border-t border-[var(--border-subtle)]">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    setAuthMode("masuk");
+                    setIsAuthModalOpen(true);
+                    setIsMobileMenuOpen(false);
+                  }}
+                  className="flex-1 text-xs font-bold h-9"
+                >
+                  <span>Masuk</span>
+                </Button>
+                <Button
+                  size="sm"
+                  variant="gradient"
+                  onClick={() => {
+                    setAuthMode("daftar");
+                    setIsAuthModalOpen(true);
+                    setIsMobileMenuOpen(false);
+                  }}
+                  className="flex-1 text-xs font-bold h-9"
+                >
+                  <span>Daftar</span>
+                </Button>
+              </div>
+            )}
           </div>
         )}
       </header>
 
-      {/* Google SSO Login Modal */}
-      {isGoogleModalOpen && (
+      {/* Customer Auth Modal (Masuk / Daftar / OTP) */}
+      {isAuthModalOpen && (
         <GoogleSSOModal
-          isOpen={isGoogleModalOpen}
-          onClose={() => setIsGoogleModalOpen(false)}
+          isOpen={isAuthModalOpen}
+          initialMode={authMode}
+          onClose={() => setIsAuthModalOpen(false)}
         />
       )}
     </>

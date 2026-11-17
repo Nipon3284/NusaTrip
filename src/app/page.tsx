@@ -42,6 +42,7 @@ import {
   useCustomerAuth,
   useHeroSettings,
   getHeroGradientCss,
+  HERO_PRESETS,
 } from "@/lib/data/tour-store";
 import { GoogleSSOModal } from "@/components/auth/google-sso-modal";
 
@@ -155,6 +156,38 @@ export default function HomePage() {
   const [quickSearchId, setQuickSearchId] = useState("");
   const [isGoogleModalOpen, setIsGoogleModalOpen] = useState(false);
 
+  // Interactive Mouse Parallax & Spotlight State
+  const [mousePos, setMousePos] = useState({ x: 0, y: 0, rawX: 0, rawY: 0 });
+  const [isHoveringHero, setIsHoveringHero] = useState(false);
+
+  // Active Destination Preset (interactively switchable or auto-cycled)
+  const [activePresetIndex, setActivePresetIndex] = useState(0);
+  const [isAutoPlay, setIsAutoPlay] = useState(true);
+
+  // Auto-play destination cycle every 10s unless user manually clicks
+  React.useEffect(() => {
+    if (!isAutoPlay) return;
+    const interval = setInterval(() => {
+      setActivePresetIndex((prev) => (prev + 1) % Math.min(HERO_PRESETS.length, 5));
+    }, 10000);
+    return () => clearInterval(interval);
+  }, [isAutoPlay]);
+
+  const handleHeroMouseMove = (e: React.MouseEvent<HTMLElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = (e.clientX - rect.left) / rect.width - 0.5;
+    const y = (e.clientY - rect.top) / rect.height - 0.5;
+    setMousePos({
+      x,
+      y,
+      rawX: e.clientX - rect.left,
+      rawY: e.clientY - rect.top,
+    });
+  };
+
+  const activeHeroImage =
+    HERO_PRESETS[activePresetIndex]?.imageUrl || heroSettings.imageUrl;
+
   const formatRupiah = (val?: number) => {
     if (!val) return "Rp 0";
     return new Intl.NumberFormat("id-ID", {
@@ -173,13 +206,22 @@ export default function HomePage() {
       <PublicNavbar />
 
       <main className="flex-1 space-y-20 pb-16">
-        {/* HERO SECTION WITH CUSTOMIZABLE BACKGROUND & GRADIENT OVERLAY */}
-        <section className="relative pt-16 sm:pt-24 pb-20 sm:pb-28 overflow-hidden border-b border-[var(--border-subtle)]">
-          {/* Layer 1: Background Image */}
+        {/* HERO SECTION WITH INTERACTIVE ANIMATED BACKGROUND & GRADIENT OVERLAY */}
+        <section
+          onMouseMove={handleHeroMouseMove}
+          onMouseEnter={() => setIsHoveringHero(true)}
+          onMouseLeave={() => {
+            setIsHoveringHero(false);
+            setMousePos({ x: 0, y: 0, rawX: 0, rawY: 0 });
+          }}
+          className="relative pt-16 sm:pt-24 pb-20 sm:pb-28 overflow-hidden border-b border-[var(--border-subtle)]"
+        >
+          {/* Layer 1: Animated Living Background Image with Ken Burns & Parallax */}
           <div
-            className="absolute inset-0 bg-cover bg-center transition-all duration-700 pointer-events-none"
+            className="absolute inset-[-40px] bg-cover bg-center animate-ken-burns transition-transform duration-300 ease-out pointer-events-none"
             style={{
-              backgroundImage: `url(${heroSettings.imageUrl})`,
+              backgroundImage: `url(${activeHeroImage})`,
+              transform: `translate3d(${mousePos.x * -24}px, ${mousePos.y * -16}px, 0)`,
               filter:
                 heroSettings.blurAmount === "sm"
                   ? "blur(4px)"
@@ -190,7 +232,34 @@ export default function HomePage() {
             aria-hidden="true"
           />
 
-          {/* Layer 2: Gradient Overlay with Custom Opacity */}
+          {/* Layer 2: Interactive Mouse Spotlight Following Cursor */}
+          {isHoveringHero && (
+            <div
+              className="absolute inset-0 pointer-events-none transition-opacity duration-300"
+              style={{
+                background: `radial-gradient(650px circle at ${mousePos.rawX}px ${mousePos.rawY}px, rgba(99, 102, 241, 0.22), transparent 75%)`,
+              }}
+              aria-hidden="true"
+            />
+          )}
+
+          {/* Layer 3: Moving Ambient Glow Mesh Orbs */}
+          <div className="absolute inset-0 pointer-events-none overflow-hidden" aria-hidden="true">
+            <div className="absolute -top-24 -left-24 w-80 sm:w-96 h-80 sm:h-96 rounded-full bg-cyan-500/20 blur-3xl animate-float-orb-1" />
+            <div className="absolute top-1/4 -right-24 w-96 sm:w-112 h-96 sm:h-112 rounded-full bg-indigo-600/25 blur-3xl animate-float-orb-2" />
+            <div className="absolute -bottom-20 left-1/3 w-72 sm:w-80 h-72 sm:h-80 rounded-full bg-purple-600/20 blur-3xl animate-float-orb-3" />
+          </div>
+
+          {/* Layer 4: Subtle Floating Ambient Sparkles / Particles */}
+          <div className="absolute inset-0 pointer-events-none overflow-hidden" aria-hidden="true">
+            <div className="absolute top-1/4 left-[15%] w-1.5 h-1.5 rounded-full bg-cyan-300 shadow-[0_0_8px_#67e8f9] animate-particle-1" />
+            <div className="absolute top-1/3 right-[20%] w-2 h-2 rounded-full bg-indigo-300 shadow-[0_0_10px_#a5b4fc] animate-particle-2" />
+            <div className="absolute top-2/3 left-[28%] w-1.5 h-1.5 rounded-full bg-white/80 shadow-[0_0_8px_#ffffff] animate-particle-3" />
+            <div className="absolute top-1/2 right-[12%] w-2 h-2 rounded-full bg-sky-300 shadow-[0_0_10px_#7dd3fc] animate-particle-4" />
+            <div className="absolute top-3/4 right-[32%] w-1.5 h-1.5 rounded-full bg-purple-300 shadow-[0_0_8px_#d8b4fe] animate-particle-5" />
+          </div>
+
+          {/* Layer 5: Gradient Overlay with Custom Opacity */}
           <div
             className="absolute inset-0 transition-all duration-500 pointer-events-none"
             style={{
@@ -200,13 +269,13 @@ export default function HomePage() {
             aria-hidden="true"
           />
 
-          {/* Layer 3: Smooth Bottom Fade into Page Surface */}
+          {/* Layer 6: Smooth Bottom Fade into Page Surface */}
           <div
             className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-[var(--surface-page)] via-[var(--surface-page)]/80 to-transparent pointer-events-none"
             aria-hidden="true"
           />
 
-          {/* Layer 4: Foreground Content with Guaranteed Text Contrast */}
+          {/* Layer 7: Foreground Content with Guaranteed Text Contrast */}
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
             <div className="text-center max-w-4xl mx-auto space-y-6">
               <div
@@ -346,6 +415,36 @@ export default function HomePage() {
                 >
                   <QrCode className={`w-4 h-4 shrink-0 ${isDark ? "text-cyan-300" : "text-cyan-600"}`} />
                   <span>VIP Group Clearance</span>
+                </div>
+              </div>
+
+              {/* Interactive Live Panorama Switcher */}
+              <div className="pt-5 flex flex-col sm:flex-row items-center justify-center gap-2">
+                <div className="inline-flex items-center gap-1 p-1 rounded-full bg-black/40 dark:bg-black/60 backdrop-blur-md border border-white/20 text-xs shadow-lg">
+                  <span className="flex items-center gap-1.5 pl-2.5 pr-1.5 text-slate-200 text-[11px] font-medium">
+                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                    <span className="hidden sm:inline">Panorama:</span>
+                  </span>
+                  {HERO_PRESETS.slice(0, 5).map((preset, pIdx) => {
+                    const isSelected = activePresetIndex === pIdx;
+                    return (
+                      <button
+                        key={preset.id}
+                        type="button"
+                        onClick={() => {
+                          setActivePresetIndex(pIdx);
+                          setIsAutoPlay(false);
+                        }}
+                        className={`px-3 py-1 rounded-full text-xs font-semibold transition-all ${
+                          isSelected
+                            ? "bg-white text-slate-900 shadow-sm font-bold scale-102"
+                            : "text-slate-200 hover:text-white hover:bg-white/20"
+                        }`}
+                      >
+                        {preset.location.split(" ")[0]}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             </div>
