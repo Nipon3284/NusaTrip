@@ -72,7 +72,16 @@ function formatRupiah(num: number): string {
 }
 
 export function ModuleMitraMapping() {
-  const { apiKey, saveKey } = useGoogleMapsKey();
+  const { apiKey, saveKey, isLoading } = useGoogleMapsKey();
+
+  if (isLoading && !apiKey) {
+    return (
+      <div className="w-full h-96 flex flex-col items-center justify-center p-8 text-center bg-[var(--surface-card)] rounded-2xl border border-[var(--border-subtle)] text-xs text-[var(--text-muted)] space-y-3">
+        <div className="w-8 h-8 border-2 border-[var(--brand-primary)] border-t-transparent rounded-full animate-spin" />
+        <p className="font-semibold text-[var(--text-secondary)]">Menghubungkan ke Google Maps Platform...</p>
+      </div>
+    );
+  }
 
   if (apiKey) {
     return (
@@ -1267,6 +1276,11 @@ function ModuleMitraMappingContent({
                   onChange={(e) => setInputKey(e.target.value)}
                   className="w-full h-10 px-3 rounded-xl border border-[var(--border-default)] bg-[var(--surface-page)] text-xs text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono"
                 />
+              </div>
+
+              <div className="p-2.5 rounded-xl bg-[var(--surface-subtle)] border border-[var(--border-subtle)] text-[11px] text-[var(--text-secondary)] flex items-center gap-2">
+                <Check className="w-4 h-4 text-[var(--status-success)] shrink-0" />
+                <span>Kunci otomatis tersinkronisasi ke seluruh perangkat admin NusaTrip.</span>
               </div>
 
               <div className="p-3 rounded-xl bg-indigo-50/50 dark:bg-indigo-950/30 border border-indigo-200/60 dark:border-indigo-800/60 text-[11px] text-[var(--text-secondary)] space-y-1">

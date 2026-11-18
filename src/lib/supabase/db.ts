@@ -315,3 +315,47 @@ export async function updateDbLeadStatus(id: string, status: string): Promise<bo
     return false;
   }
 }
+
+// ==============================================================================
+// 5. REPOSITORI KONFIGURASI SISTEM (tbl_konfigurasi_sistem)
+// Sinkronisasi Kunci API (Google Maps, dsb.) ke seluruh perangkat admin
+// ==============================================================================
+
+export async function getDbSystemConfig(key: string): Promise<string | null> {
+  if (!isSupabaseConfigured()) return null;
+
+  try {
+    const { data, error } = await supabase
+      .from("tbl_konfigurasi_sistem")
+      .select("nilai")
+      .eq("kunci", key)
+      .maybeSingle();
+
+    if (error || !data) return null;
+    return (data as { nilai?: string }).nilai || null;
+  } catch {
+    return null;
+  }
+}
+
+export async function saveDbSystemConfig(
+  key: string,
+  value: string,
+  description?: string
+): Promise<boolean> {
+  if (!isSupabaseConfigured()) return false;
+
+  try {
+    const row = {
+      kunci: key,
+      nilai: value,
+      keterangan: description || "Konfigurasi terpadu NusaTrip",
+      waktu_diperbarui: new Date().toISOString(),
+    };
+
+    const { error } = await supabase.from("tbl_konfigurasi_sistem").upsert(row);
+    return !error;
+  } catch {
+    return false;
+  }
+}

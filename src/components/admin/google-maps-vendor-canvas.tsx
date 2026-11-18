@@ -285,7 +285,7 @@ export function GoogleMapsVendorCanvas({
   onToggleThemeMode,
 }: GoogleMapsVendorCanvasProps) {
   // Safe API key lookup from shared hook
-  const { apiKey, saveKey } = useGoogleMapsKey();
+  const { apiKey, saveKey, isLoading } = useGoogleMapsKey();
   const outerContext = useContext(APIProviderContext);
 
   // Theme Mode (Light / Dark), default to light as requested
@@ -653,7 +653,12 @@ export function GoogleMapsVendorCanvas({
       <div className={`relative w-full h-[460px] sm:h-[500px] overflow-hidden select-none transition-colors ${
         currentTheme === "light" ? "bg-slate-100" : "bg-slate-950"
       }`}>
-        {apiKey ? (
+        {isLoading && !apiKey ? (
+          <div className="relative w-full h-full flex flex-col items-center justify-center p-6 text-center bg-slate-950 text-xs text-slate-400 space-y-3">
+            <div className="w-8 h-8 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+            <p className="font-semibold text-slate-300">Menghubungkan ke Google Maps Platform...</p>
+          </div>
+        ) : apiKey ? (
           outerContext ? (
             mapElement
           ) : (
@@ -858,6 +863,11 @@ export function GoogleMapsVendorCanvas({
                   onChange={(e) => setInputKey(e.target.value)}
                   className="w-full h-10 px-3 rounded-xl border border-[var(--border-default)] bg-[var(--surface-page)] text-xs text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono"
                 />
+              </div>
+
+              <div className="p-2.5 rounded-xl bg-indigo-50/50 dark:bg-indigo-950/30 border border-indigo-200/60 dark:border-indigo-800/60 text-[11px] text-[var(--text-secondary)] flex items-center gap-2">
+                <Check className="w-4 h-4 text-emerald-500 shrink-0" />
+                <span>Kunci otomatis tersinkronisasi ke seluruh perangkat admin NusaTrip.</span>
               </div>
 
               <div className="p-3 rounded-xl bg-indigo-50/50 dark:bg-indigo-950/30 border border-indigo-200/60 dark:border-indigo-800/60 text-[11px] text-[var(--text-secondary)] space-y-1">
