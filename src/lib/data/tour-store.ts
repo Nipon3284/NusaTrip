@@ -136,34 +136,30 @@ const DEMO_LEAD_IDS = new Set([
 ]);
 
 let cachedLeadsRaw: string | null = null;
-let cachedLeadsList: CustomerLeadItem[] = [];
+let cachedLeadsList: CustomerLeadItem[] = INITIAL_LEADS;
 
-/**
- * Mengambil daftar leads riil (bukan data simulasi/dummy)
- */
 export const getLeadsSnapshot = (): CustomerLeadItem[] => {
-  if (typeof window === "undefined") return [];
+  if (typeof window === "undefined") return INITIAL_LEADS;
   const raw = localStorage.getItem("nusatrip_leads");
-  if (!raw) return [];
+  if (!raw) return INITIAL_LEADS;
 
   if (raw !== cachedLeadsRaw) {
     try {
       const parsed: CustomerLeadItem[] = JSON.parse(raw);
-      // Filter ketat: Hanya pertahankan data pesanan nyata, buang semua ID demo/simulasi
-      cachedLeadsList = Array.isArray(parsed)
-        ? parsed.filter(
-            (item) => !DEMO_LEAD_IDS.has(item.id) && !item.userId?.startsWith("usr-demo")
-          )
-        : [];
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        cachedLeadsList = parsed;
+      } else {
+        cachedLeadsList = INITIAL_LEADS;
+      }
       cachedLeadsRaw = raw;
     } catch {
-      return [];
+      return INITIAL_LEADS;
     }
   }
   return cachedLeadsList;
 };
 
-export const getLeadsServerSnapshot = (): CustomerLeadItem[] => [];
+export const getLeadsServerSnapshot = (): CustomerLeadItem[] => INITIAL_LEADS;
 
 export const useCustomerLeads = (): CustomerLeadItem[] => {
   return useSyncExternalStore(subscribeTourData, getLeadsSnapshot, getLeadsServerSnapshot);

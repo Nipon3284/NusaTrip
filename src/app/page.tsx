@@ -143,7 +143,7 @@ const WHY_US_PILLARS = [
   },
   {
     title: "Transparansi Biaya & Escrow",
-    desc: "Simulasi DP 40% transparan dengan rekening escrow aman, pemantauan nota insidental real-time, dan LPJ resmi faktur pajak.",
+    desc: "Alur pembayaran DP 40% transparan dengan rekening escrow aman, pemantauan nota insidental real-time, dan LPJ resmi faktur pajak.",
     icon: CheckCircle2,
   },
 ];
