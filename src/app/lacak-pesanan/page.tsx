@@ -220,7 +220,7 @@ function LacakPesananContent() {
           <div className="p-3 rounded-2xl bg-slate-100 dark:bg-slate-800/60 border border-[var(--border-subtle)] space-y-2">
             <div className="flex items-center justify-between text-xs">
               <span className="font-bold text-[var(--text-secondary)]">
-                Simulasi Tampilan 4 Fase Waktu Perjalanan:
+                Jadwal & Fase Waktu Perjalanan:
               </span>
               <span className="text-[11px] text-indigo-600 font-bold">
                 Fase Terkunci: {searchedLead.commandCenterPhase || "h7_terbuka"}
@@ -431,7 +431,7 @@ function LacakPesananContent() {
                 </div>
                 {!searchedLead.isRepaymentPaid ? (
                   <Button size="sm" variant="gradient" onClick={handlePayRepayment}>
-                    Simulasi Bayar Pelunasan 60%
+                    Bayar Pelunasan 60% (Escrow)
                   </Button>
                 ) : (
                   <Badge variant="emerald" size="md">Lunas 100% Terverifikasi</Badge>

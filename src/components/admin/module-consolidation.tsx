@@ -248,7 +248,7 @@ export function ModuleConsolidation({
             </div>
           ) : (
             <div className="mt-5 p-4 rounded-xl border border-dashed border-[var(--border-default)] text-center text-xs text-[var(--text-muted)]">
-              Klik <span className="font-semibold text-[var(--text-primary)]">"Konsolidasikan Rute & Vendor"</span> untuk mensimulasikan negosiasi kuota lintas-event secara serentak.
+              Klik <span className="font-semibold text-[var(--text-primary)]">"Konsolidasikan Rute & Vendor"</span> untuk mengalkulasikan negosiasi kuota lintas-event secara serentak.
             </div>
           )}
         </Card>

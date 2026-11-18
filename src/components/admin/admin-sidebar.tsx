@@ -216,7 +216,7 @@ export function AdminSidebar({
                 onClick={() => setShowSimulations(!showSimulations)}
                 className="w-full flex items-center justify-between px-3 py-1.5 text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider hover:text-[var(--text-primary)] transition-colors"
               >
-                <span>Simulasi Solver Lanjutan</span>
+                <span>Modul Optimasi Solver Riset Operasi</span>
                 <ChevronDown
                   className={`w-3.5 h-3.5 transition-transform ${showSimulations ? "rotate-180" : ""}`}
                 />

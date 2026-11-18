@@ -127,42 +127,87 @@ export const deleteTourPackage = (id: string) => {
 };
 
 // ─── LEADS STORE ──────────────────────────────────────────────
-let cachedLeadsRaw: string | null = null;
-let cachedLeadsList: CustomerLeadItem[] = INITIAL_LEADS;
+const DEMO_LEAD_IDS = new Set([
+  "LEAD-9012",
+  "ORD-H7-7721",
+  "ORD-H0-4491",
+  "ORD-H1-2233",
+  "ORD-DONE-1002",
+]);
 
+let cachedLeadsRaw: string | null = null;
+let cachedLeadsList: CustomerLeadItem[] = [];
+
+/**
+ * Mengambil daftar leads riil (bukan data simulasi/dummy)
+ */
 export const getLeadsSnapshot = (): CustomerLeadItem[] => {
-  if (typeof window === "undefined") return INITIAL_LEADS;
+  if (typeof window === "undefined") return [];
   const raw = localStorage.getItem("nusatrip_leads");
-  if (!raw) return INITIAL_LEADS;
+  if (!raw) return [];
+
   if (raw !== cachedLeadsRaw) {
     try {
       const parsed: CustomerLeadItem[] = JSON.parse(raw);
-      // Pastikan lead bawaan demo memiliki asosiasi email akun demonya
-      // agar tidak bocor ke akun pengguna baru yang baru mendaftar
-      cachedLeadsList = parsed.map((item) => {
-        if (!item.userEmail) {
-          const match = INITIAL_LEADS.find((il) => il.id === item.id);
-          if (match?.userEmail) {
-            return { ...item, userEmail: match.userEmail, userId: match.userId };
-          }
-        }
-        return item;
-      });
+      // Filter ketat: Hanya pertahankan data pesanan nyata, buang semua ID demo/simulasi
+      cachedLeadsList = Array.isArray(parsed)
+        ? parsed.filter(
+            (item) => !DEMO_LEAD_IDS.has(item.id) && !item.userId?.startsWith("usr-demo")
+          )
+        : [];
       cachedLeadsRaw = raw;
     } catch {
-      return INITIAL_LEADS;
+      return [];
     }
   }
   return cachedLeadsList;
 };
 
-export const getLeadsServerSnapshot = (): CustomerLeadItem[] => INITIAL_LEADS;
+export const getLeadsServerSnapshot = (): CustomerLeadItem[] => [];
 
 export const useCustomerLeads = (): CustomerLeadItem[] => {
   return useSyncExternalStore(subscribeTourData, getLeadsSnapshot, getLeadsServerSnapshot);
 };
 
 export const useLeads = useCustomerLeads;
+
+/**
+ * Menghapus seluruh data simulasi/demo yang mungkin tersimpan di localStorage browser
+ */
+export const purgeSimulatedLeads = (): CustomerLeadItem[] => {
+  if (typeof window === "undefined") return [];
+  const raw = localStorage.getItem("nusatrip_leads");
+  if (!raw) {
+    localStorage.setItem("nusatrip_leads", JSON.stringify([]));
+    localStorage.setItem("nusatrip_data_mode", "real");
+    cachedLeadsList = [];
+    cachedLeadsRaw = "[]";
+    emitChange();
+    return [];
+  }
+
+  try {
+    const parsed: CustomerLeadItem[] = JSON.parse(raw);
+    const realOnly = Array.isArray(parsed)
+      ? parsed.filter(
+          (item) => !DEMO_LEAD_IDS.has(item.id) && !item.userId?.startsWith("usr-demo")
+        )
+      : [];
+    localStorage.setItem("nusatrip_leads", JSON.stringify(realOnly));
+    localStorage.setItem("nusatrip_data_mode", "real");
+    cachedLeadsList = realOnly;
+    cachedLeadsRaw = JSON.stringify(realOnly);
+    emitChange();
+    return realOnly;
+  } catch {
+    localStorage.setItem("nusatrip_leads", JSON.stringify([]));
+    localStorage.setItem("nusatrip_data_mode", "real");
+    cachedLeadsList = [];
+    cachedLeadsRaw = "[]";
+    emitChange();
+    return [];
+  }
+};
 
 export const saveCustomerLeads = (leads: CustomerLeadItem[]) => {
   if (typeof window === "undefined") return;

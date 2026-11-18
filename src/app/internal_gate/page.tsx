@@ -91,7 +91,7 @@ export default function InternalGatePage() {
     "mitra-mapping": "Manajemen Zona Wilayah & Peta Mitra (GIS)",
     "lp-optimizer": "Rekomendasi Paket Wisata Cerdas (Linear Programming)",
     leads: "Inbox Permintaan Kustom & Negosiasi",
-    payments: "Simulasi Escrow & Kas Lapangan",
+    payments: "Manajemen Escrow & Kas Lapangan",
     "cms-packages": "Kelola Paket Wisata (Landing Page CMS)",
     "supply-chain": "Rantai Pasok & Minimasi Biaya Vendor (Simplex)",
     consolidation: "Konsolidasi Event Wisata & Kapasitas Bus",
@@ -223,7 +223,7 @@ export default function InternalGatePage() {
         <main className="flex-1 p-5 sm:p-7 lg:p-8 overflow-y-auto">
           {currentTab === "overview" && <ModuleOverview onSelectTab={setCurrentTab} />}
           {currentTab === "mitra-mapping" && <ModuleMitraMapping />}
-          {currentTab === "lp-optimizer" && <ModuleLpOptimizer />}
+          {currentTab === "lp-optimizer" && <ModuleLpOptimizer onSelectTab={setCurrentTab} />}
           {currentTab === "leads" && <ModuleLeads onSelectTab={setCurrentTab} />}
           {currentTab === "payments" && <ModulePayments />}
           {currentTab === "cms-packages" && <ModuleCmsPackages />}

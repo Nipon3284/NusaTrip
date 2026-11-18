@@ -169,7 +169,7 @@ export function ModulePayments() {
             className="gap-2 text-xs font-semibold"
           >
             <ArrowDownLeft className="w-4 h-4" />
-            <span>Simulasikan Pelunasan Klien</span>
+            <span>Verifikasi Pelunasan Klien</span>
           </Button>
         </div>
       </div>
@@ -407,18 +407,18 @@ export function ModulePayments() {
         </div>
       </div>
 
-      {/* Arus Kas & Buku Pembayaran Simulasi */}
+      {/* Arus Kas & Buku Pembayaran Escrow */}
       <Card padding="none">
         <div className="p-5 border-b border-[var(--border-subtle)] flex items-center justify-between">
           <div>
             <h3 className="text-base font-semibold text-[var(--text-primary)]">
-              Arus Kas & Buku Pembayaran Simulasi
+              Buku Kas & Rekonsiliasi Pembayaran Escrow
             </h3>
             <p className="text-xs text-[var(--text-muted)] mt-0.5">
               Pemisahan otomatis antara penerimaan klien, sewa vendor, dan kas kecil lapangan
             </p>
           </div>
-          <Badge variant="brand">Simulasi Gateway Aktif</Badge>
+          <Badge variant="brand">Gateway Escrow Aktif & Terverifikasi</Badge>
         </div>
 
         <div className="overflow-x-auto">

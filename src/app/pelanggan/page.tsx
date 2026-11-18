@@ -641,7 +641,7 @@ export default function CustomerDashboardPage() {
             <div className="p-3 rounded-2xl bg-slate-100 dark:bg-slate-800/60 border border-[var(--border-subtle)] space-y-2">
               <div className="flex items-center justify-between text-xs">
                 <span className="font-bold text-[var(--text-primary)]">
-                  Simulasi Tampilan 4 Fase Waktu Perjalanan:
+                  Jadwal & Fase Waktu Perjalanan:
                 </span>
                 <span className="text-[11px] text-indigo-600 font-bold">
                   Status Terkunci: {activeLead.commandCenterPhase || activeLead.status}
@@ -801,7 +801,7 @@ export default function CustomerDashboardPage() {
                   </div>
                   {!activeLead.isRepaymentPaid ? (
                     <Button size="sm" variant="gradient" onClick={() => handlePayRepayment(activeLead.id)}>
-                      Simulasi Bayar Pelunasan 60%
+                      Bayar Pelunasan 60% (Escrow)
                     </Button>
                   ) : (
                     <Badge variant="emerald" size="md">LUNAS 100% TERVERIFIKASI</Badge>

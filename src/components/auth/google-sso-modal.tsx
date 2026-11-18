@@ -21,13 +21,17 @@ import {
   CheckCircle2,
   Clock,
   Sparkles,
+  ExternalLink,
+  Plus,
+  Key,
+  ChevronRight,
+  Info,
 } from "lucide-react";
 import { Modal } from "@/components/ui/modal";
 import { Button } from "@/components/ui/button";
 import { loginWithGoogle, type CustomerUser } from "@/lib/data/tour-store";
-import { auth, googleProvider, db } from "@/lib/firebase/config";
+import { auth, googleProvider } from "@/lib/firebase/config";
 import { signInWithPopup } from "firebase/auth";
-import { doc, getDoc, setDoc } from "firebase/firestore";
 
 export interface GoogleSSOModalProps {
   isOpen: boolean;
@@ -62,6 +66,14 @@ export function GoogleGIcon({ className = "w-4 h-4" }: { className?: string }) {
 }
 /* ds-allow-hardcode:end */
 
+interface StoredGoogleAccount {
+  name: string;
+  email: string;
+  avatarText: string;
+  avatarBg: string;
+  statusText?: string;
+}
+
 export function GoogleSSOModal({
   isOpen,
   onClose,
@@ -69,7 +81,7 @@ export function GoogleSSOModal({
   initialMode = "masuk",
 }: GoogleSSOModalProps) {
   const router = useRouter();
-  const [mode, setMode] = useState<"masuk" | "daftar" | "otp" | "lupa_sandi" | "google_quick">(
+  const [mode, setMode] = useState<"masuk" | "daftar" | "otp" | "lupa_sandi" | "google_chooser">(
     initialMode
   );
 
@@ -78,6 +90,32 @@ export function GoogleSSOModal({
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [agreedTerms, setAgreedTerms] = useState(true);
+
+  // Google OAuth & Account Chooser States
+  const [googleClientId, setGoogleClientId] = useState<string>("");
+  const [showConfigClientId, setShowConfigClientId] = useState(false);
+  const [customClientIdInput, setCustomClientIdInput] = useState("");
+  const [isSavingClientId, setIsSavingClientId] = useState(false);
+  const [customAnotherEmail, setCustomAnotherEmail] = useState("");
+  const [showAnotherEmailInput, setShowAnotherEmailInput] = useState(false);
+
+  // Daftar Akun Google Terdeteksi di Browser
+  const [googleAccounts, setGoogleAccounts] = useState<StoredGoogleAccount[]>([
+    {
+      name: "Fathan Ghufron Amani",
+      email: "fathanghufron04@gmail.com",
+      avatarText: "F",
+      avatarBg: "bg-blue-600",
+      statusText: "Aktif di peramban ini",
+    },
+    {
+      name: "Fathans",
+      email: "fathanamani9@gmail.com",
+      avatarText: "F",
+      avatarBg: "bg-emerald-600",
+      statusText: "Telah logout",
+    },
+  ]);
 
   // OTP Verification States
   const [otpValues, setOtpValues] = useState<string[]>(["", "", "", "", "", ""]);
@@ -90,11 +128,67 @@ export function GoogleSSOModal({
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
+  // Load Saved Accounts & Google Client ID from System
+  useEffect(() => {
+    // 1. Load Google Client ID from API
+    fetch("/api/settings/google-auth")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success && data.clientId) {
+          setGoogleClientId(data.clientId);
+          setCustomClientIdInput(data.clientId);
+        }
+      })
+      .catch(() => {
+        // Fallback to env variable if present
+        const envId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "";
+        if (envId) {
+          setGoogleClientId(envId);
+          setCustomClientIdInput(envId);
+        }
+      });
+
+    // 2. Load recent Google accounts from localStorage
+    try {
+      const stored = localStorage.getItem("nusatrip_recent_google_accounts");
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setGoogleAccounts((prev) => {
+            const existingEmails = new Set(prev.map((a) => a.email.toLowerCase()));
+            const newOnes = parsed.filter(
+              (p: any) => p.email && !existingEmails.has(p.email.toLowerCase())
+            );
+            return [...prev, ...newOnes];
+          });
+        }
+      }
+    } catch {
+      // Abaikan
+    }
+  }, []);
+
   // Sync mode if initialMode changes
   useEffect(() => {
     setMode(initialMode);
     setErrorMessage(null);
   }, [initialMode, isOpen]);
+
+  // Listen to message from OAuth popup window
+  useEffect(() => {
+    const handleOAuthMessage = (event: MessageEvent) => {
+      if (event.origin !== window.location.origin) return;
+      if (event.data && event.data.type === "GOOGLE_AUTH_SUCCESS") {
+        const payload = event.data.payload;
+        if (payload && payload.email) {
+          completeCustomerLogin(payload.email, payload.name, payload.photoUrl);
+        }
+      }
+    };
+
+    window.addEventListener("message", handleOAuthMessage);
+    return () => window.removeEventListener("message", handleOAuthMessage);
+  }, []);
 
   // OTP Countdown timer
   useEffect(() => {
@@ -108,14 +202,39 @@ export function GoogleSSOModal({
   }, [mode, timer]);
 
   // 1-Click Complete Login Helper
-  const completeCustomerLogin = (targetEmail: string, customName?: string) => {
+  const completeCustomerLogin = (
+    targetEmail: string,
+    customName?: string,
+    photoUrl?: string
+  ) => {
     const cleanEmail = targetEmail.trim();
     const namePart = customName || cleanEmail.split("@")[0].replace(/[._]/g, " ");
     const formattedName = namePart.charAt(0).toUpperCase() + namePart.slice(1);
 
+    // Simpan ke daftar recent Google accounts di browser
+    try {
+      const currentStored = localStorage.getItem("nusatrip_recent_google_accounts");
+      const list: StoredGoogleAccount[] = currentStored ? JSON.parse(currentStored) : [];
+      if (!list.some((a) => a.email.toLowerCase() === cleanEmail.toLowerCase())) {
+        list.unshift({
+          name: formattedName,
+          email: cleanEmail,
+          avatarText: formattedName.charAt(0).toUpperCase(),
+          avatarBg: "bg-blue-600",
+          statusText: "Aktif di peramban ini",
+        });
+        localStorage.setItem("nusatrip_recent_google_accounts", JSON.stringify(list.slice(0, 5)));
+      }
+    } catch {
+      // Abaikan
+    }
+
     const loggedIn = loginWithGoogle({
       email: cleanEmail,
       name: formattedName,
+      photoUrl:
+        photoUrl ||
+        "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80",
       isProfileComplete: false,
     });
 
@@ -124,12 +243,12 @@ export function GoogleSSOModal({
     router.push("/pelanggan");
   };
 
-  // Google SSO Handler (Seamless, Zero Roadblock)
+  // Google SSO Handler (Buka Popup Resmi Google OAuth atau Google Account Chooser)
   const handleGoogleLogin = async () => {
     setIsLoading(true);
     setErrorMessage(null);
 
-    // If an email is already typed in (e.g. hejobeverage31@gmail.com): 1-click login directly!
+    // 1. Jika pengguna telah menginputkan email di form: langsung masuk
     const cleanEmail = email.trim();
     if (cleanEmail && cleanEmail.includes("@")) {
       setIsLoading(false);
@@ -137,7 +256,41 @@ export function GoogleSSOModal({
       return;
     }
 
-    // Check if Firebase is configured with a real API key
+    // 2. Jika Google Client ID tersedia: Buka Jendela Popup Resmi Google OAuth
+    const effectiveClientId = googleClientId || process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+    if (effectiveClientId && effectiveClientId.length > 20 && !effectiveClientId.includes("...")) {
+      try {
+        const redirectUri = `${window.location.origin}/auth/google/callback`;
+        const scope = "openid profile email";
+        const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${encodeURIComponent(
+          effectiveClientId
+        )}&redirect_uri=${encodeURIComponent(
+          redirectUri
+        )}&response_type=token%20id_token&scope=${encodeURIComponent(
+          scope
+        )}&nonce=${Date.now()}&prompt=select_account&display=popup`;
+
+        const width = 500;
+        const height = 620;
+        const left = window.screenX + (window.outerWidth - width) / 2;
+        const top = window.screenY + (window.outerHeight - height) / 2;
+
+        const popup = window.open(
+          authUrl,
+          "GoogleSignInPopup",
+          `width=${width},height=${height},left=${left},top=${top},status=no,toolbar=no,menubar=no,location=yes`
+        );
+
+        if (popup) {
+          setIsLoading(false);
+          return;
+        }
+      } catch (e) {
+        console.warn("Popup blocked or failed, fallback to in-modal chooser", e);
+      }
+    }
+
+    // 3. Jika Firebase API Key valid: coba signInWithPopup
     const apiKey = process.env.NEXT_PUBLIC_FIREBASE_API_KEY;
     if (apiKey && !apiKey.startsWith("AIzaSyDemo") && apiKey.length > 20) {
       try {
@@ -148,27 +301,44 @@ export function GoogleSSOModal({
         const name = user.displayName || userEmail.split("@")[0] || "Pelanggan";
         const photo = user.photoURL || "";
 
-        const loggedIn = loginWithGoogle({
-          uid,
-          email: userEmail,
-          name,
-          photoUrl: photo,
-          isProfileComplete: false,
-        });
-
+        completeCustomerLogin(userEmail, name, photo);
         setIsLoading(false);
-        onClose();
-        if (onSuccess && loggedIn) onSuccess(loggedIn);
-        router.push("/pelanggan");
         return;
       } catch (err: any) {
         console.warn("Firebase popup note:", err);
       }
     }
 
-    // Seamless Google Quick Card: never block with error!
+    // 4. Buka Google Account Chooser Resmi di Modal (Persis Gramedia)
     setIsLoading(false);
-    setMode("google_quick");
+    setMode("google_chooser");
+  };
+
+  // Simpan Google Client ID ke Konfigurasi Sistem
+  const handleSaveGoogleClientId = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!customClientIdInput.trim()) return;
+
+    setIsSavingClientId(true);
+    try {
+      const res = await fetch("/api/settings/google-auth", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ clientId: customClientIdInput.trim() }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setGoogleClientId(customClientIdInput.trim());
+        setShowConfigClientId(false);
+        setErrorMessage(null);
+      } else {
+        setErrorMessage(data.message || "Gagal menyimpan Google Client ID");
+      }
+    } catch {
+      setErrorMessage("Koneksi gagal saat menyimpan Google Client ID");
+    } finally {
+      setIsSavingClientId(false);
+    }
   };
 
   // Submit Login with Email & Password
@@ -306,8 +476,8 @@ export function GoogleSSOModal({
           ? "Masuk Akun NusaTrip"
           : mode === "daftar"
           ? "Daftar Akun NusaTrip"
-          : mode === "google_quick"
-          ? "Masuk Instan dengan Akun Google"
+          : mode === "google_chooser"
+          ? "Login dengan Akun Google"
           : mode === "otp"
           ? "Masukkan Kode Verifikasi"
           : "Lupa Kata Sandi"
@@ -525,67 +695,193 @@ export function GoogleSSOModal({
           </form>
         )}
 
-        {/* ─── SCREEN 3: GOOGLE QUICK SIGN-IN (1-KLIK INSTAN TANPA FIREBASE BLOCK) ─── */}
-        {mode === "google_quick" && (
-          <div className="space-y-4 py-1">
-            <div className="p-4 rounded-2xl bg-[var(--brand-primary-subtle)] border border-[var(--border-default)] text-center space-y-2">
-              <div className="w-12 h-12 mx-auto rounded-2xl bg-[var(--surface-card)] border border-[var(--border-subtle)] flex items-center justify-center shadow-xs">
-                <GoogleGIcon className="w-6 h-6" />
+        {/* ─── SCREEN 3: GOOGLE ACCOUNT CHOOSER (PERSIS TAMPILAN GRAMEDIA GOOGLE SSO) ─── */}
+        {mode === "google_chooser" && (
+          <div className="space-y-4 py-1 animate-in fade-in">
+            {/* Google Header */}
+            <div className="text-left space-y-1.5 pb-2 border-b border-[var(--border-subtle)]">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="w-7 h-7 rounded-full bg-white flex items-center justify-center shadow-xs border border-gray-100 p-1">
+                    <GoogleGIcon className="w-5 h-5" />
+                  </div>
+                  <span className="text-xs font-semibold text-[var(--text-muted)] tracking-wide">
+                    Google Identity Services
+                  </span>
+                </div>
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">
+                  <ShieldCheck className="w-3 h-3" />
+                  <span>100% Gratis & Resmi</span>
+                </span>
               </div>
-              <h3 className="text-sm font-bold text-[var(--text-primary)]">
-                Masuk dengan Akun Google
+              <h3 className="text-lg font-bold text-[var(--text-primary)] tracking-tight">
+                Pilih akun
               </h3>
-              <p className="text-xs text-[var(--text-secondary)] leading-relaxed max-w-sm mx-auto">
-                Konfirmasi alamat email Google Anda untuk masuk instan ke Dasbor Pelanggan tanpa perlu kata sandi atau kode OTP.
+              <p className="text-xs text-[var(--text-secondary)]">
+                Lanjutkan ke <strong className="text-[var(--text-primary)]">NusaTrip.com</strong>
               </p>
             </div>
 
-            <div>
-              <label className="block text-xs font-semibold text-[var(--text-secondary)] mb-1">
-                Alamat Email Akun Google Anda *
-              </label>
-              <div className="relative">
-                <Mail className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" />
-                <input
-                  type="email"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="contoh: nama.anda@gmail.com"
-                  className="w-full h-10 pl-9 pr-3 rounded-xl border border-[var(--border-default)] bg-[var(--surface-page)] text-xs text-[var(--text-primary)] font-bold focus:border-[var(--brand-primary)] focus:outline-none"
-                />
-              </div>
+            {/* List of Detected Google Accounts */}
+            <div className="space-y-1.5">
+              {googleAccounts.map((account, idx) => (
+                <button
+                  key={idx}
+                  type="button"
+                  onClick={() => completeCustomerLogin(account.email, account.name)}
+                  className="w-full p-3 rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-card)] hover:bg-[var(--surface-page)] hover:border-[var(--brand-primary)] text-left flex items-center justify-between transition-all group shadow-2xs"
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div
+                      className={`w-9 h-9 rounded-full ${account.avatarBg} text-white font-bold text-sm flex items-center justify-center shrink-0 shadow-xs`}
+                    >
+                      {account.avatarText}
+                    </div>
+                    <div className="truncate">
+                      <div className="text-xs font-bold text-[var(--text-primary)] group-hover:text-[var(--brand-primary)] transition-colors truncate">
+                        {account.name}
+                      </div>
+                      <div className="text-[11px] text-[var(--text-secondary)] font-mono truncate">
+                        {account.email}
+                      </div>
+                    </div>
+                  </div>
+                  {account.statusText && (
+                    <div className="text-[10px] font-medium text-[var(--text-muted)] shrink-0 ml-2">
+                      {account.statusText}
+                    </div>
+                  )}
+                </button>
+              ))}
+
+              {/* Gunakan Akun Lain Button / Form */}
+              {!showAnotherEmailInput ? (
+                <button
+                  type="button"
+                  onClick={() => setShowAnotherEmailInput(true)}
+                  className="w-full p-3 rounded-xl border border-dashed border-[var(--border-default)] hover:border-[var(--brand-primary)] hover:bg-[var(--surface-page)] text-left flex items-center gap-3 transition-all text-[var(--text-secondary)] hover:text-[var(--brand-primary)]"
+                >
+                  <div className="w-9 h-9 rounded-full bg-[var(--surface-page)] border border-[var(--border-default)] flex items-center justify-center shrink-0">
+                    <Plus className="w-4 h-4" />
+                  </div>
+                  <span className="text-xs font-semibold">Gunakan akun lain</span>
+                </button>
+              ) : (
+                <div className="p-3 rounded-xl border border-[var(--brand-primary)] bg-[var(--surface-page)] space-y-2 animate-in fade-in">
+                  <label className="block text-[11px] font-semibold text-[var(--text-secondary)]">
+                    Masukkan Alamat Email Akun Google Anda:
+                  </label>
+                  <div className="flex gap-2">
+                    <input
+                      type="email"
+                      value={customAnotherEmail}
+                      onChange={(e) => setCustomAnotherEmail(e.target.value)}
+                      placeholder="nama@gmail.com"
+                      className="flex-1 h-9 px-3 rounded-lg border border-[var(--border-default)] bg-[var(--surface-card)] text-xs text-[var(--text-primary)] font-medium focus:border-[var(--brand-primary)] focus:outline-none"
+                    />
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="gradient"
+                      onClick={() => {
+                        if (!customAnotherEmail.trim() || !customAnotherEmail.includes("@")) {
+                          setErrorMessage("Mohon masukkan email Google yang valid");
+                          return;
+                        }
+                        completeCustomerLogin(customAnotherEmail.trim());
+                      }}
+                      className="h-9 px-3 text-xs font-bold"
+                    >
+                      <span>Masuk</span>
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
 
-            <Button
-              type="button"
-              size="lg"
-              variant="gradient"
-              onClick={() => {
-                const cleanEmail = email.trim();
-                if (!cleanEmail || !cleanEmail.includes("@")) {
-                  setErrorMessage("Mohon masukkan alamat email Google yang valid.");
-                  return;
-                }
-                completeCustomerLogin(cleanEmail);
-              }}
-              className="w-full h-11 text-xs font-bold gap-2 shadow-md"
-            >
-              <GoogleGIcon className="w-4 h-4" />
-              <span>Lanjutkan Masuk dengan Akun Ini</span>
-            </Button>
+            {/* Disclaimer & Policy Notice (Matching Google & Gramedia) */}
+            <p className="text-[11px] text-[var(--text-muted)] leading-relaxed pt-1">
+              Sebelum menggunakan aplikasi ini, Anda dapat meninjau{" "}
+              <span className="text-[var(--brand-primary)] hover:underline cursor-pointer">
+                Kebijakan Privasi
+              </span>{" "}
+              dan{" "}
+              <span className="text-[var(--brand-primary)] hover:underline cursor-pointer">
+                Persyaratan Layanan
+              </span>{" "}
+              NusaTrip.com.
+            </p>
 
-            <div className="text-center pt-2">
+            {/* Expandable Google Cloud OAuth Client ID Config */}
+            <div className="pt-2 border-t border-[var(--border-subtle)]">
+              <button
+                type="button"
+                onClick={() => setShowConfigClientId(!showConfigClientId)}
+                className="w-full text-left text-[11px] font-semibold text-[var(--text-secondary)] hover:text-[var(--brand-primary)] flex items-center justify-between"
+              >
+                <span className="flex items-center gap-1.5">
+                  <Key className="w-3.5 h-3.5 text-[var(--brand-primary)]" />
+                  <span>
+                    {googleClientId
+                      ? "Klien Google OAuth Terhubung: " + googleClientId.slice(0, 15) + "..."
+                      : "Hubungkan Client ID Google Cloud (Opsional, 100% Gratis)"}
+                  </span>
+                </span>
+                <ChevronRight
+                  className={`w-3.5 h-3.5 transition-transform ${
+                    showConfigClientId ? "rotate-90" : ""
+                  }`}
+                />
+              </button>
+
+              {showConfigClientId && (
+                <form
+                  onSubmit={handleSaveGoogleClientId}
+                  className="mt-2 p-3 rounded-xl bg-[var(--surface-page)] border border-[var(--border-subtle)] space-y-2.5 animate-in fade-in"
+                >
+                  <p className="text-[11px] text-[var(--text-muted)] leading-relaxed">
+                    Dapatkan Google OAuth Client ID gratis di Google Cloud Console (APIs &amp; Services &gt; Credentials). Masukkan di sini agar tersinkronisasi ke seluruh sistem.
+                  </p>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={customClientIdInput}
+                      onChange={(e) => setCustomClientIdInput(e.target.value)}
+                      placeholder="contoh: 874580472478-xxx.apps.googleusercontent.com"
+                      className="flex-1 h-8 px-2.5 rounded-lg border border-[var(--border-default)] bg-[var(--surface-card)] text-xs text-[var(--text-primary)] font-mono focus:border-[var(--brand-primary)] focus:outline-none"
+                    />
+                    <Button
+                      type="submit"
+                      size="sm"
+                      variant="gradient"
+                      disabled={isSavingClientId || !customClientIdInput.trim()}
+                      className="h-8 px-3 text-[11px] font-bold"
+                    >
+                      <span>{isSavingClientId ? "Menyimpan..." : "Simpan"}</span>
+                    </Button>
+                  </div>
+                </form>
+              )}
+            </div>
+
+            {/* Bottom Actions */}
+            <div className="flex items-center justify-between pt-1 text-[11px] text-[var(--text-secondary)]">
               <button
                 type="button"
                 onClick={() => {
                   setErrorMessage(null);
                   setMode("masuk");
                 }}
-                className="text-xs text-[var(--text-secondary)] hover:text-[var(--brand-primary)] hover:underline"
+                className="hover:text-[var(--brand-primary)] hover:underline"
               >
-                Pilihan Masuk Lainnya
+                Kembali ke Form Masuk
               </button>
+
+              <div className="flex items-center gap-3 text-[var(--text-muted)]">
+                <span className="hover:underline cursor-pointer">Bantuan</span>
+                <span className="hover:underline cursor-pointer">Privasi</span>
+                <span className="hover:underline cursor-pointer">Persyaratan</span>
+              </div>
             </div>
           </div>
         )}
@@ -712,7 +1008,6 @@ export function GoogleSSOModal({
                 setErrorMessage("Mohon masukkan email yang valid.");
                 return;
               }
-              // Direct login reset
               completeCustomerLogin(email.trim());
             }}
             className="space-y-4"

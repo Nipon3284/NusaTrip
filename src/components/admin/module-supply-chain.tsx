@@ -214,7 +214,7 @@ export function ModuleSupplyChain({
             className="gap-2 text-xs font-semibold"
           >
             <ShieldAlert className="w-4 h-4" />
-            <span>{isCrisisSimulated ? "Reset Krisis" : "Simulasi Krisis H-7"}</span>
+            <span>{isCrisisSimulated ? "Reset Kontinjensi" : "Uji Kontinjensi H-7"}</span>
           </Button>
           <Button
             variant="gradient"

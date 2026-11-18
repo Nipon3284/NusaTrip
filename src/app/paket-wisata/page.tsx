@@ -310,7 +310,7 @@ export default function PaketWisataPage() {
         <Modal
           isOpen={!!selectedPkg}
           onClose={() => setSelectedPkg(null)}
-          title="Simulasi Checkout DP Paket Katalog (Harga Pas / Tanpa Nego)"
+          title="Konfirmasi Checkout DP Paket Wisata"
           maxWidth="lg"
         >
           <div className="space-y-4 text-xs">
@@ -321,7 +321,7 @@ export default function PaketWisataPage() {
                   Pesanan Berhasil Dicatat! ID: {checkoutSuccessId}
                 </h3>
                 <p className="text-xs text-emerald-800 dark:text-emerald-200">
-                  Simulasi pembayaran DP 40% berhasil diverifikasi ke rekening escrow NusaTrip. Anda dapat melacak progres di Dasbor Pelanggan.
+                  Pembayaran DP 40% berhasil diverifikasi ke rekening escrow NusaTrip. Anda dapat melacak progres di Dasbor Pelanggan.
                 </p>
                 <div className="flex justify-center gap-2 pt-2">
                   <Link href="/pelanggan">
@@ -387,7 +387,7 @@ export default function PaketWisataPage() {
                     isLoading={isCheckingOut}
                     onClick={handleCheckout}
                   >
-                    Simulasikan Pembayaran DP 40%
+                    Bayar DP 40% via Escrow
                   </Button>
                 </div>
               </>

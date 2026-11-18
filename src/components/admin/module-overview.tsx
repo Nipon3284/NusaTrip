@@ -59,21 +59,21 @@ export function ModuleOverview({
       title: "Rantai Pasok",
       sub: "Minimasi Biaya Vendor",
       icon: <Layers className="w-4 h-4 text-slate-500" />,
-      tag: "Simulasi",
+      tag: "Optimasi",
     },
     {
       id: "consolidation" as AdminTab,
       title: "Konsolidasi Kuota",
       sub: "Diskon Volume Skala",
       icon: <Merge className="w-4 h-4 text-slate-500" />,
-      tag: "Simulasi",
+      tag: "Optimasi",
     },
     {
       id: "assignment" as AdminTab,
       title: "Penugasan Kru",
       sub: "Assignment SDM & Aset",
       icon: <Users className="w-4 h-4 text-slate-500" />,
-      tag: "Simulasi",
+      tag: "Optimasi",
     },
   ];
 
@@ -242,7 +242,7 @@ export function ModuleOverview({
               Akses Cepat Modul Optimasi Riset Operasi
             </h3>
             <p className="text-xs text-[var(--text-muted)] mt-0.5">
-              Jalankan simulasi matematis instan untuk tiap lini operasional pariwisata
+              Jalankan kalkulasi optimasi matematis instan untuk tiap lini operasional pariwisata
             </p>
           </div>
           <span className="hidden sm:inline-flex items-center gap-1.5 text-xs text-indigo-600 dark:text-indigo-400 font-semibold bg-indigo-50 dark:bg-indigo-950/50 px-2.5 py-1 rounded-lg">
