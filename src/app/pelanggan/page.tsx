@@ -59,6 +59,45 @@ const INSTANCE_CATEGORIES = [
   { value: "Keluarga & Rombongan Pribadi", label: "Keluarga & Rombongan Pribadi" },
 ];
 
+function EmptyTabNotice({
+  title,
+  desc,
+  icon: Icon,
+}: {
+  title: string;
+  desc: string;
+  icon: React.ComponentType<{ className?: string }>;
+}) {
+  return (
+    <div className="p-8 sm:p-12 rounded-3xl border border-dashed border-[var(--border-default)] bg-[var(--surface-card)] text-center flex flex-col items-center justify-center space-y-4 shadow-xs">
+      <div className="w-14 h-14 rounded-2xl bg-[var(--brand-primary-subtle)] text-[var(--brand-primary)] flex items-center justify-center">
+        <Icon className="w-7 h-7" />
+      </div>
+      <div className="max-w-md space-y-1.5">
+        <h3 className="text-sm sm:text-base font-bold text-[var(--text-primary)]">
+          {title}
+        </h3>
+        <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
+          {desc}
+        </p>
+      </div>
+      <div className="pt-2 flex flex-wrap items-center justify-center gap-2">
+        <Link href="/kustom-trip">
+          <Button size="sm" variant="gradient" className="gap-1.5 text-xs font-bold shadow-xs">
+            <PlusCircle className="w-4 h-4" />
+            <span>Rancang Trip Baru Sekarang</span>
+          </Button>
+        </Link>
+        <Link href="/paket-wisata">
+          <Button size="sm" variant="outline" className="text-xs font-semibold border-[var(--border-default)]">
+            <span>Lihat Paket Wisata</span>
+          </Button>
+        </Link>
+      </div>
+    </div>
+  );
+}
+
 export default function CustomerDashboardPage() {
   const customerAuth = useCustomerAuth();
   const leads = useCustomerLeads();
@@ -122,12 +161,44 @@ export default function CustomerDashboardPage() {
     }).format(val);
   };
 
-  // Find selected active lead
-  const activeLead =
-    leads.find((l) => l.id === selectedOrderId) || leads[0] || null;
+  // Filter pesanan khusus untuk akun pelanggan yang sedang login (isolasi data antar akun)
+  const userLeads = React.useMemo(() => {
+    if (!customerAuth) return [];
+    const authEmail = (customerAuth.email || "").toLowerCase().trim();
+    const authId = (customerAuth.id || customerAuth.uid || "").toLowerCase().trim();
 
-  // Filter leads for this user or all demo leads if in guest mode
-  const userLeads = leads;
+    return leads.filter((lead) => {
+      const leadEmail = (lead.userEmail || "").toLowerCase().trim();
+      const leadId = (lead.userId || "").toLowerCase().trim();
+      if (leadEmail && authEmail && leadEmail === authEmail) return true;
+      if (leadId && authId && leadId === authId) return true;
+      return false;
+    });
+  }, [leads, customerAuth]);
+
+  // Find selected active lead from user's own orders
+  const activeLead = React.useMemo(() => {
+    if (userLeads.length === 0) return null;
+    return userLeads.find((l) => l.id === selectedOrderId) || userLeads[0] || null;
+  }, [userLeads, selectedOrderId]);
+
+  // Auto-sync selectedOrderId when activeLead changes
+  React.useEffect(() => {
+    if (activeLead && activeLead.id !== selectedOrderId) {
+      setSelectedOrderId(activeLead.id);
+      setNegoBidInput(activeLead.customerBid || activeLead.budget || 45000000);
+      setCommandPhase(
+        activeLead.commandCenterPhase ||
+          (activeLead.status === "selesai"
+            ? "selesai_h1"
+            : activeLead.status === "final_h7"
+            ? "h7_terbuka"
+            : activeLead.status === "proses_dss"
+            ? "h7_terbuka"
+            : "masa_tunggu")
+      );
+    }
+  }, [activeLead, selectedOrderId]);
 
   const handleSelectOrder = (lead: CustomerLeadItem) => {
     setSelectedOrderId(lead.id);
@@ -383,123 +454,154 @@ export default function CustomerDashboardPage() {
               </Link>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {userLeads.map((item) => {
-                const isSelected = activeLead?.id === item.id;
-                return (
-                  <div
-                    key={item.id}
-                    className={`p-5 rounded-2xl border transition-all text-xs space-y-3 bg-[var(--surface-card)] ${
-                      isSelected
-                        ? "border-indigo-500 ring-2 ring-indigo-500/20 shadow-md"
-                        : "border-[var(--border-subtle)] hover:border-indigo-300"
-                    }`}
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="font-mono font-bold text-xs bg-indigo-50 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 px-2 py-0.5 rounded border border-indigo-200 dark:border-indigo-800">
-                            {item.id}
-                          </span>
-                          <span className="text-[11px] text-[var(--text-muted)]">
-                            {item.destination} &bull; {item.pax} Pax ({item.days} Hari)
-                          </span>
+            {userLeads.length === 0 ? (
+              <div className="p-8 sm:p-12 rounded-3xl border border-dashed border-[var(--border-default)] bg-[var(--surface-card)] text-center flex flex-col items-center justify-center space-y-4 shadow-xs">
+                <div className="w-16 h-16 rounded-3xl bg-[var(--brand-primary-subtle)] text-[var(--brand-primary)] flex items-center justify-center shadow-inner">
+                  <Calendar className="w-8 h-8" />
+                </div>
+                <div className="max-w-md space-y-1.5">
+                  <h3 className="text-base sm:text-lg font-bold text-[var(--text-primary)]">
+                    Belum Ada Pesanan Perjalanan
+                  </h3>
+                  <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
+                    Halo, <strong className="text-[var(--text-primary)]">{customerAuth?.name || "Pelanggan"}</strong>! Akun Anda siap digunakan. Anda belum memiliki pesanan atau pengajuan perjalanan rombongan aktif.
+                  </p>
+                </div>
+
+                <div className="flex flex-col sm:flex-row items-center gap-3 pt-2">
+                  <Link href="/kustom-trip">
+                    <Button size="md" variant="gradient" className="gap-2 text-xs font-bold shadow-md">
+                      <PlusCircle className="w-4 h-4" />
+                      <span>Rancang Trip Kustom B2B Baru</span>
+                    </Button>
+                  </Link>
+                  <Link href="/paket-wisata">
+                    <Button size="md" variant="outline" className="gap-2 text-xs font-semibold border-[var(--border-default)]">
+                      <SlidersHorizontal className="w-4 h-4 text-[var(--brand-primary)]" />
+                      <span>Jelajahi Paket Wisata Populer</span>
+                    </Button>
+                  </Link>
+                </div>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {userLeads.map((item) => {
+                  const isSelected = activeLead?.id === item.id;
+                  return (
+                    <div
+                      key={item.id}
+                      className={`p-5 rounded-2xl border transition-all text-xs space-y-3 bg-[var(--surface-card)] ${
+                        isSelected
+                          ? "border-indigo-500 ring-2 ring-indigo-500/20 shadow-md"
+                          : "border-[var(--border-subtle)] hover:border-indigo-300"
+                      }`}
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="font-mono font-bold text-xs bg-indigo-50 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 px-2 py-0.5 rounded border border-indigo-200 dark:border-indigo-800">
+                              {item.id}
+                            </span>
+                            <span className="text-[11px] text-[var(--text-muted)]">
+                              {item.destination} &bull; {item.pax} Pax ({item.days} Hari)
+                            </span>
+                          </div>
+                          <h3 className="font-extrabold text-sm text-[var(--text-primary)]">
+                            {item.institution || item.name}
+                          </h3>
                         </div>
-                        <h3 className="font-extrabold text-sm text-[var(--text-primary)]">
-                          {item.institution || item.name}
-                        </h3>
+
+                        <Badge
+                          variant={
+                            item.status === "final_h7"
+                              ? "emerald"
+                              : item.status === "selesai"
+                              ? "neutral"
+                              : item.status === "negosiasi"
+                              ? "warning"
+                              : "brand"
+                          }
+                          size="sm"
+                        >
+                          {item.status.replace("_", " ").toUpperCase()}
+                        </Badge>
                       </div>
 
-                      <Badge
-                        variant={
-                          item.status === "final_h7"
-                            ? "emerald"
-                            : item.status === "selesai"
-                            ? "neutral"
-                            : item.status === "negosiasi"
-                            ? "warning"
-                            : "brand"
-                        }
-                        size="sm"
-                      >
-                        {item.status.replace("_", " ").toUpperCase()}
-                      </Badge>
-                    </div>
-
-                    <div className="grid grid-cols-3 gap-2 p-2.5 rounded-xl bg-[var(--surface-page)] border border-[var(--border-subtle)] text-[11px]">
-                      <div>
-                        <span className="text-[10px] text-[var(--text-muted)] block">Total Kontrak:</span>
-                        <strong className="text-indigo-600 dark:text-indigo-400">
-                          {formatRupiah(item.budget || 0)}
-                        </strong>
+                      <div className="grid grid-cols-3 gap-2 p-2.5 rounded-xl bg-[var(--surface-page)] border border-[var(--border-subtle)] text-[11px]">
+                        <div>
+                          <span className="text-[10px] text-[var(--text-muted)] block">Total Kontrak:</span>
+                          <strong className="text-indigo-600 dark:text-indigo-400">
+                            {formatRupiah(item.budget || 0)}
+                          </strong>
+                        </div>
+                        <div>
+                          <span className="text-[10px] text-[var(--text-muted)] block">DP 40%:</span>
+                          <strong className="text-emerald-600">
+                            {formatRupiah(item.dpAmount || Math.round((item.budget || 0) * 0.4))}
+                          </strong>
+                        </div>
+                        <div>
+                          <span className="text-[10px] text-[var(--text-muted)] block">Pelunasan 60%:</span>
+                          <strong className="text-amber-600">
+                            {formatRupiah(item.repaymentAmount || Math.round((item.budget || 0) * 0.6))}
+                          </strong>
+                        </div>
                       </div>
-                      <div>
-                        <span className="text-[10px] text-[var(--text-muted)] block">DP 40%:</span>
-                        <strong className="text-emerald-600">
-                          {formatRupiah(item.dpAmount || Math.round((item.budget || 0) * 0.4))}
-                        </strong>
-                      </div>
-                      <div>
-                        <span className="text-[10px] text-[var(--text-muted)] block">Pelunasan 60%:</span>
-                        <strong className="text-amber-600">
-                          {formatRupiah(item.repaymentAmount || Math.round((item.budget || 0) * 0.6))}
-                        </strong>
-                      </div>
-                    </div>
 
-                    <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-[var(--border-subtle)]">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          handleSelectOrder(item);
-                          setActiveTab("command_center");
-                        }}
-                        className="inline-flex items-center gap-1 text-xs font-bold text-indigo-600 hover:underline"
-                      >
-                        <QrCode className="w-3.5 h-3.5" />
-                        <span>Buka Command Center</span>
-                      </button>
+                      <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-[var(--border-subtle)]">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            handleSelectOrder(item);
+                            setActiveTab("command_center");
+                          }}
+                          className="inline-flex items-center gap-1 text-xs font-bold text-indigo-600 hover:underline"
+                        >
+                          <QrCode className="w-3.5 h-3.5" />
+                          <span>Buka Command Center</span>
+                        </button>
 
-                      <div className="flex items-center gap-2">
-                        {item.status === "negosiasi" && (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              handleSelectOrder(item);
-                              setActiveTab("negosiasi");
-                            }}
-                            className="px-2.5 py-1 rounded-lg bg-amber-500 text-white font-semibold text-[11px] hover:bg-amber-600 transition-colors"
-                          >
-                            Masuk Ruang Nego
-                          </button>
-                        )}
-                        {!item.isRepaymentPaid && item.status === "final_h7" && (
-                          <button
-                            type="button"
-                            onClick={() => handlePayRepayment(item.id)}
-                            className="px-2.5 py-1 rounded-lg bg-emerald-600 text-white font-semibold text-[11px] hover:bg-emerald-700 transition-colors"
-                          >
-                            Bayar Pelunasan 60%
-                          </button>
-                        )}
-                        {item.status === "selesai" && (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              handleSelectOrder(item);
-                              setActiveTab("rating");
-                            }}
-                            className="px-2.5 py-1 rounded-lg bg-indigo-50 text-indigo-700 border border-indigo-200 font-semibold text-[11px] hover:bg-indigo-100 transition-colors"
-                          >
-                            Beri Rating
-                          </button>
-                        )}
+                        <div className="flex items-center gap-2">
+                          {item.status === "negosiasi" && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                handleSelectOrder(item);
+                                setActiveTab("negosiasi");
+                              }}
+                              className="px-2.5 py-1 rounded-lg bg-amber-500 text-white font-semibold text-[11px] hover:bg-amber-600 transition-colors"
+                            >
+                              Masuk Ruang Nego
+                            </button>
+                          )}
+                          {!item.isRepaymentPaid && item.status === "final_h7" && (
+                            <button
+                              type="button"
+                              onClick={() => handlePayRepayment(item.id)}
+                              className="px-2.5 py-1 rounded-lg bg-emerald-600 text-white font-semibold text-[11px] hover:bg-emerald-700 transition-colors"
+                            >
+                              Bayar Pelunasan 60%
+                            </button>
+                          )}
+                          {item.status === "selesai" && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                handleSelectOrder(item);
+                                setActiveTab("rating");
+                              }}
+                              className="px-2.5 py-1 rounded-lg bg-indigo-50 text-indigo-700 border border-indigo-200 font-semibold text-[11px] hover:bg-indigo-100 transition-colors"
+                            >
+                              Beri Rating
+                            </button>
+                          )}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                );
-              })}
-            </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         )}
 
@@ -523,10 +625,10 @@ export default function CustomerDashboardPage() {
                 <CustomSelect
                   value={selectedOrderId}
                   onChange={(val) => {
-                    const found = leads.find((l) => l.id === val);
+                    const found = userLeads.find((l) => l.id === val);
                     if (found) handleSelectOrder(found);
                   }}
-                  options={leads.map((l) => ({
+                  options={userLeads.map((l) => ({
                     value: l.id,
                     label: `${l.id} - ${l.institution || l.name} (${l.destination})`,
                   }))}
@@ -882,6 +984,14 @@ export default function CustomerDashboardPage() {
           </div>
         )}
 
+        {activeTab === "command_center" && !activeLead && (
+          <EmptyTabNotice
+            icon={QrCode}
+            title="Belum Ada Perjalanan untuk Command Center"
+            desc="Fitur pemantauan H-7, pelacakan live armada bus, dan rincian kontak 4 kru ber-SPK aktif ketika Anda memiliki pesanan perjalanan."
+          />
+        )}
+
         {/* TAB 3: RUANG NEGOSIASI B2B */}
         {activeTab === "negosiasi" && activeLead && (
           <div className="p-5 rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-card)] text-xs space-y-4">
@@ -963,6 +1073,14 @@ export default function CustomerDashboardPage() {
           </div>
         )}
 
+        {activeTab === "negosiasi" && !activeLead && (
+          <EmptyTabNotice
+            icon={SlidersHorizontal}
+            title="Belum Ada Ruang Negosiasi Aktif"
+            desc="Ruang negosiasi penawaran B2B dan kalkulasi shadow price DSS otomatis terbuka saat Anda mengajukan pesanan paket trip baru."
+          />
+        )}
+
         {/* TAB 4: DOMPET DOKUMEN & LPJ DIGITAL */}
         {activeTab === "dokumen" && activeLead && (
           <div className="p-5 rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-card)] text-xs space-y-4">
@@ -1014,6 +1132,14 @@ export default function CustomerDashboardPage() {
               })}
             </div>
           </div>
+        )}
+
+        {activeTab === "dokumen" && !activeLead && (
+          <EmptyTabNotice
+            icon={FileText}
+            title="Dompet Dokumen & LPJ Masih Kosong"
+            desc="Invoice resmi, kwitansi DP/pelunasan, SPK kru lapangan, faktur pajak PPN, dan dokumen LPJ akan otomatis terbit di sini."
+          />
         )}
 
         {/* TAB 5: EVALUASI & RATING KOMPONEN */}
@@ -1082,6 +1208,14 @@ export default function CustomerDashboardPage() {
               </Button>
             </div>
           </div>
+        )}
+
+        {activeTab === "rating" && !activeLead && (
+          <EmptyTabNotice
+            icon={Star}
+            title="Belum Ada Evaluasi Perjalanan"
+            desc="Audit kepuasan dan rating komponen trip (hotel, bus, resto, tour leader) akan aktif setelah perjalanan rombongan Anda selesai terlaksana."
+          />
         )}
           </>
         )}

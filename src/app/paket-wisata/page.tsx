@@ -116,6 +116,8 @@ export default function PaketWisataPage() {
         orderTrack: "katalog_ritel",
         commandCenterPhase: "masa_tunggu",
         status: "menunggu_dp",
+        userId: customerAuth.id || customerAuth.uid,
+        userEmail: customerAuth.email,
         selectedSpots: selectedPkg.spots,
       });
 

@@ -293,6 +293,8 @@ export default function KustomTripPage() {
       orderTrack: "kustom_b2b",
       commandCenterPhase: "masa_tunggu",
       status: "menunggu_dp",
+      userId: customerAuth.id || customerAuth.uid,
+      userEmail: customerAuth.email,
       selectedSpots: wizardSelectedSpots,
       notes: wizardNotes,
       departureDate: "2026-11-28",

@@ -57,6 +57,8 @@ export async function POST(request: Request) {
       budget,
       selectedSpots,
       notes,
+      userId,
+      userEmail,
     } = parseResult.data;
 
     const now = new Date();
@@ -86,6 +88,8 @@ export async function POST(request: Request) {
       notes: notes || "",
       createdAt: timeStr,
       status: "baru",
+      userId: userId || undefined,
+      userEmail: userEmail || undefined,
       pettyCashInitial: 1500000,
       fieldExpenses: [],
     };

@@ -136,7 +136,18 @@ export const getLeadsSnapshot = (): CustomerLeadItem[] => {
   if (!raw) return INITIAL_LEADS;
   if (raw !== cachedLeadsRaw) {
     try {
-      cachedLeadsList = JSON.parse(raw);
+      const parsed: CustomerLeadItem[] = JSON.parse(raw);
+      // Pastikan lead bawaan demo memiliki asosiasi email akun demonya
+      // agar tidak bocor ke akun pengguna baru yang baru mendaftar
+      cachedLeadsList = parsed.map((item) => {
+        if (!item.userEmail) {
+          const match = INITIAL_LEADS.find((il) => il.id === item.id);
+          if (match?.userEmail) {
+            return { ...item, userEmail: match.userEmail, userId: match.userId };
+          }
+        }
+        return item;
+      });
       cachedLeadsRaw = raw;
     } catch {
       return INITIAL_LEADS;
@@ -172,9 +183,12 @@ export const addCustomerLead = async (
   const bottomLineCost = Math.round(estCostPerPax * (lead.pax || 20) + estTransport);
 
   const newId = `LEAD-${Math.floor(1000 + Math.random() * 9000)}`;
+  const auth = getCustomerAuthSnapshot();
   const newLead: CustomerLeadItem = {
     ...lead,
     id: newId,
+    userId: lead.userId || auth?.id || auth?.uid || undefined,
+    userEmail: lead.userEmail || auth?.email || undefined,
     createdAt: timeStr,
     status: lead.status || "baru",
     customerBid: lead.budget || Math.round(bottomLineCost * 1.2),

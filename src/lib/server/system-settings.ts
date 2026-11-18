@@ -12,6 +12,8 @@ declare global {
   var __NUSATRIP_MAPS_KEY: string | undefined;
 }
 
+export const DEFAULT_GOOGLE_MAPS_API_KEY = "AIzaSyDortaUbmafxHS3FYI5RUcPoCHtfQfzFzg";
+
 /**
  * Membaca Google Maps API Key dari berbagai lapisan penyimpanan (Environment, DB, File Lokal)
  * sehingga dapat diterapkan di semua perangkat admin tanpa perlu diinputkan berulang kali.
@@ -22,7 +24,7 @@ export async function getSystemMapsKey(): Promise<string> {
     process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ||
     process.env.GOOGLE_MAPS_API_KEY ||
     "";
-  if (envKey && envKey.trim().length > 5 && !envKey.startsWith("AIzaSy...")) {
+  if (envKey && envKey.trim().length > 5 && !envKey.includes("...")) {
     globalThis.__NUSATRIP_MAPS_KEY = envKey.trim();
     return envKey.trim();
   }
@@ -39,7 +41,7 @@ export async function getSystemMapsKey(): Promise<string> {
       const parsed = JSON.parse(raw);
       if (parsed.google_maps_api_key && typeof parsed.google_maps_api_key === "string") {
         const fileKey = parsed.google_maps_api_key.trim();
-        if (fileKey) {
+        if (fileKey && !fileKey.includes("...")) {
           globalThis.__NUSATRIP_MAPS_KEY = fileKey;
           process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY = fileKey;
           return fileKey;
@@ -53,7 +55,7 @@ export async function getSystemMapsKey(): Promise<string> {
   // 4. Cek Database Cloud Supabase (tbl_konfigurasi_sistem)
   try {
     const dbKey = await getDbSystemConfig("google_maps_api_key");
-    if (dbKey && dbKey.trim()) {
+    if (dbKey && dbKey.trim() && !dbKey.includes("...")) {
       const trimmed = dbKey.trim();
       globalThis.__NUSATRIP_MAPS_KEY = trimmed;
       process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY = trimmed;
@@ -70,7 +72,7 @@ export async function getSystemMapsKey(): Promise<string> {
       const match = envContent.match(/NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=(.+)/);
       if (match && match[1]) {
         const parsedKey = match[1].trim().replace(/^["']|["']$/g, "");
-        if (parsedKey && !parsedKey.startsWith("AIzaSy...")) {
+        if (parsedKey && !parsedKey.includes("...")) {
           globalThis.__NUSATRIP_MAPS_KEY = parsedKey;
           process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY = parsedKey;
           return parsedKey;
@@ -81,7 +83,10 @@ export async function getSystemMapsKey(): Promise<string> {
     // Abaikan
   }
 
-  return "";
+  // 6. Default Fallback Kunci Resmi NusaTrip
+  globalThis.__NUSATRIP_MAPS_KEY = DEFAULT_GOOGLE_MAPS_API_KEY;
+  process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY = DEFAULT_GOOGLE_MAPS_API_KEY;
+  return DEFAULT_GOOGLE_MAPS_API_KEY;
 }
 
 /**

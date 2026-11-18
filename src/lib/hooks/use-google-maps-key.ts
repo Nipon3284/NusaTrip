@@ -5,22 +5,21 @@ import { useState, useEffect, useCallback } from "react";
 const STORAGE_KEY = "nusatrip_gmaps_api_key";
 const EVENT_NAME = "nusatrip_gmaps_key_change";
 
+export const DEFAULT_GOOGLE_MAPS_API_KEY = "AIzaSyDortaUbmafxHS3FYI5RUcPoCHtfQfzFzg";
+
 export function useGoogleMapsKey() {
   const [apiKey, setApiKey] = useState<string>(() => {
     if (typeof window !== "undefined") {
       const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored) return stored;
+      if (stored && stored.trim().length > 5) return stored.trim();
     }
-    return process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "";
+    return (
+      process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ||
+      DEFAULT_GOOGLE_MAPS_API_KEY
+    );
   });
 
-  const [isLoading, setIsLoading] = useState<boolean>(() => {
-    if (typeof window !== "undefined") {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored) return false;
-    }
-    return !Boolean(process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY);
-  });
+  const [isLoading, setIsLoading] = useState<boolean>(false);
 
   // Background sync with centralized backend so ANY device logging into admin
   // automatically receives the Google Maps API Key previously input on another device.
@@ -32,14 +31,15 @@ export function useGoogleMapsKey() {
         const res = await fetch("/api/settings/maps-key", { cache: "no-store" });
         if (res.ok) {
           const data = await res.json();
-          if (isMounted && data.apiKey) {
+          const validKey = data.apiKey && data.apiKey.trim().length > 5 ? data.apiKey.trim() : DEFAULT_GOOGLE_MAPS_API_KEY;
+          if (isMounted && validKey) {
             setApiKey((current) => {
-              if (current !== data.apiKey) {
+              if (current !== validKey) {
                 if (typeof window !== "undefined") {
-                  localStorage.setItem(STORAGE_KEY, data.apiKey);
-                  window.dispatchEvent(new CustomEvent(EVENT_NAME, { detail: data.apiKey }));
+                  localStorage.setItem(STORAGE_KEY, validKey);
+                  window.dispatchEvent(new CustomEvent(EVENT_NAME, { detail: validKey }));
                 }
-                return data.apiKey;
+                return validKey;
               }
               return current;
             });
@@ -59,9 +59,14 @@ export function useGoogleMapsKey() {
     const handleKeyChange = (e: Event) => {
       const customEvent = e as CustomEvent<string>;
       if (customEvent.detail !== undefined) {
-        setApiKey(customEvent.detail);
+        setApiKey(customEvent.detail || DEFAULT_GOOGLE_MAPS_API_KEY);
       } else if (typeof window !== "undefined") {
-        setApiKey(localStorage.getItem(STORAGE_KEY) || process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "");
+        const stored = localStorage.getItem(STORAGE_KEY);
+        setApiKey(
+          stored && stored.trim().length > 5
+            ? stored.trim()
+            : process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || DEFAULT_GOOGLE_MAPS_API_KEY
+        );
       }
     };
 
@@ -76,7 +81,7 @@ export function useGoogleMapsKey() {
   }, []);
 
   const saveKey = useCallback(async (newKey: string) => {
-    const trimmed = newKey.trim();
+    const trimmed = newKey.trim() || DEFAULT_GOOGLE_MAPS_API_KEY;
     if (typeof window !== "undefined") {
       if (trimmed) {
         localStorage.setItem(STORAGE_KEY, trimmed);

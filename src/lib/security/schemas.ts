@@ -19,6 +19,8 @@ export const CreateLeadSchema = z.object({
   budget: z.coerce.number().min(0, "Anggaran tidak boleh negatif"),
   selectedSpots: z.array(z.string()).default([]),
   notes: z.string().max(500, "Catatan maksimal 500 karakter").optional().nullable(),
+  userId: z.string().optional().nullable(),
+  userEmail: z.string().optional().nullable(),
 });
 
 // Skema Login Admin Internal Gate
