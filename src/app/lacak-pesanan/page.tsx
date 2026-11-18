@@ -42,6 +42,28 @@ import {
 } from "@/lib/data/tour-store";
 import { GoogleSSOModal } from "@/components/auth/google-sso-modal";
 
+const getRealActivePhase = (
+  lead: CustomerLeadItem
+): "masa_tunggu" | "h7_terbuka" | "hari_h_berjalan" | "selesai_h1" => {
+  if (lead.commandCenterPhase) return lead.commandCenterPhase;
+  if (lead.status === "selesai") return "selesai_h1";
+
+  if (lead.departureDate) {
+    const now = new Date();
+    const dep = new Date(lead.departureDate);
+    const diffDays = Math.ceil((dep.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+    const tripDays = lead.days || 2;
+
+    if (diffDays > 7) return "masa_tunggu";
+    if (diffDays >= 1 && diffDays <= 7) return "h7_terbuka";
+    if (diffDays <= 0 && diffDays >= -tripDays) return "hari_h_berjalan";
+    if (diffDays < -tripDays) return "selesai_h1";
+  }
+
+  if (lead.status === "final_h7") return "h7_terbuka";
+  return "masa_tunggu";
+};
+
 function LacakPesananContent() {
   const searchParams = useSearchParams();
   const leads = useCustomerLeads();
@@ -50,7 +72,7 @@ function LacakPesananContent() {
   const [lookupError, setLookupError] = useState("");
   const [activeCommandPhase, setActiveCommandPhase] = useState<
     "masa_tunggu" | "h7_terbuka" | "hari_h_berjalan" | "selesai_h1"
-  >("hari_h_berjalan");
+  >("masa_tunggu");
 
   // Nego state in customer room
   const [customerBidInput, setCustomerBidInput] = useState<number>(0);
@@ -82,30 +104,25 @@ function LacakPesananContent() {
       setSearchedLead(found);
       setLookupError("");
       setCustomerBidInput(found.customerBid || found.budget || 0);
-      setActiveCommandPhase(
-        found.commandCenterPhase ||
-          (found.status === "selesai"
-            ? "selesai_h1"
-            : found.status === "final_h7"
-            ? "h7_terbuka"
-            : "masa_tunggu")
-      );
+      setActiveCommandPhase(getRealActivePhase(found));
     } else {
       setSearchedLead(null);
       setLookupError(`Nomor pesanan "${target}" tidak ditemukan. Pastikan format ID sesuai.`);
     }
   };
 
-  // Auto lookup if ID is in URL query (?id=ORD-H0-4491)
+  // Auto lookup if ID is in URL query (?id=...) or from first real lead
   useEffect(() => {
     const urlId = searchParams.get("id");
     if (urlId) {
       setLookupOrderId(urlId);
       handleLookup(urlId);
+    } else if (leads.length > 0) {
+      setLookupOrderId(leads[0].id);
+      handleLookup(leads[0].id);
     } else {
-      // Default initial view: live demo ORD-H0-4491
-      setLookupOrderId("ORD-H0-4491");
-      handleLookup("ORD-H0-4491");
+      setSearchedLead(null);
+      setLookupError("");
     }
   }, [searchParams, leads]);
 
@@ -148,7 +165,7 @@ function LacakPesananContent() {
         <div className="flex gap-2">
           <input
             type="text"
-            placeholder="Masukkan Nomor Order (contoh: ORD-H0-4491, ORD-H7-7721, LEAD-9012)..."
+            placeholder="Masukkan Nomor Order (contoh: LEAD-1234)..."
             value={lookupOrderId}
             onChange={(e) => setLookupOrderId(e.target.value)}
             className="flex-1 h-10 px-3.5 rounded-xl border border-[var(--border-default)] bg-[var(--surface-page)] text-xs text-[var(--text-primary)] font-mono font-bold"
@@ -158,29 +175,40 @@ function LacakPesananContent() {
           </Button>
         </div>
 
-        {/* Quick Demo Buttons */}
-        <div className="flex flex-wrap items-center gap-1.5 pt-1 text-[11px]">
-          <span className="text-[var(--text-muted)] font-semibold mr-1">Demo Cepat:</span>
-          {[
-            { id: "ORD-H0-4491", label: "Hari-H (VIP & GPS)", phase: "hari_h_berjalan" },
-            { id: "ORD-H7-7721", label: "H-7 (Buka Identitas & SPK)", phase: "h7_terbuka" },
-            { id: "ORD-H1-2233", label: "H+1 (LPJ Pajak & Rating)", phase: "selesai_h1" },
-            { id: "LEAD-9012", label: "H-30 (Masa Tunggu & Nego)", phase: "masa_tunggu" },
-          ].map((demo) => (
-            <button
-              key={demo.id}
-              type="button"
-              onClick={() => {
-                setLookupOrderId(demo.id);
-                handleLookup(demo.id);
-              }}
-              className="px-2.5 py-1 rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-page)] hover:border-indigo-500 hover:text-indigo-600 font-mono transition-colors"
-            >
-              <strong>{demo.id}</strong> ({demo.label})
-            </button>
-          ))}
-        </div>
+        {/* Quick Lead Selection */}
+        {leads.length > 0 && (
+          <div className="flex flex-wrap items-center gap-1.5 pt-1 text-[11px]">
+            <span className="text-[var(--text-muted)] font-semibold mr-1">Pesanan Anda:</span>
+            {leads.map((lead) => (
+              <button
+                key={lead.id}
+                type="button"
+                onClick={() => {
+                  setLookupOrderId(lead.id);
+                  handleLookup(lead.id);
+                }}
+                className="px-2.5 py-1 rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-page)] hover:border-indigo-500 hover:text-indigo-600 font-mono transition-colors"
+              >
+                <strong>{lead.id}</strong> ({lead.institution || lead.name})
+              </button>
+            ))}
+          </div>
+        )}
       </div>
+
+      {!searchedLead && !lookupError && (
+        <div className="p-8 sm:p-12 rounded-3xl border border-dashed border-[var(--border-default)] bg-[var(--surface-card)] text-center space-y-3">
+          <div className="w-12 h-12 rounded-2xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 flex items-center justify-center mx-auto">
+            <Radio className="w-6 h-6 animate-pulse" />
+          </div>
+          <h3 className="text-base font-bold text-[var(--text-primary)]">
+            Command Center Perjalanan & Lacak Event Rombongan
+          </h3>
+          <p className="text-xs text-[var(--text-secondary)] max-w-md mx-auto leading-relaxed">
+            Masukkan ID pesanan Anda pada kotak pencarian di atas untuk memantau status persiapan H-7, verifikasi 4 kru, dan posisi GPS bus secara real-time.
+          </p>
+        </div>
+      )}
 
       {lookupError && (
         <div className="p-4 rounded-xl bg-rose-50 dark:bg-rose-950/40 text-rose-800 dark:text-rose-200 text-xs flex items-center gap-2">
@@ -216,14 +244,15 @@ function LacakPesananContent() {
             </div>
           </div>
 
-          {/* 4 Time-Phase Simulator Pills */}
+          {/* Real-time Timeline Stepper */}
           <div className="p-3 rounded-2xl bg-slate-100 dark:bg-slate-800/60 border border-[var(--border-subtle)] space-y-2">
             <div className="flex items-center justify-between text-xs">
               <span className="font-bold text-[var(--text-secondary)]">
-                Jadwal & Fase Waktu Perjalanan:
+                Progres Tahapan Waktu Perjalanan Riil:
               </span>
-              <span className="text-[11px] text-indigo-600 font-bold">
-                Fase Terkunci: {searchedLead.commandCenterPhase || "h7_terbuka"}
+              <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                Fase Berjalan: {getRealActivePhase(searchedLead).replace("_", " ").toUpperCase()}
               </span>
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
@@ -232,21 +261,30 @@ function LacakPesananContent() {
                 { id: "h7_terbuka", label: "2. Fase H-7", desc: "Buka Vendor & SPK Kru" },
                 { id: "hari_h_berjalan", label: "3. Eksekusi Hari-H", desc: "VIP Clear & Live GPS" },
                 { id: "selesai_h1", label: "4. Fase H+1", desc: "LPJ & Rating Komponen" },
-              ].map((ph) => (
-                <button
-                  key={ph.id}
-                  type="button"
-                  onClick={() => setActiveCommandPhase(ph.id as any)}
-                  className={`p-2.5 rounded-xl text-left border transition-all ${
-                    activeCommandPhase === ph.id
-                      ? "bg-white dark:bg-slate-900 border-indigo-500 text-indigo-600 shadow-2xs font-bold"
-                      : "bg-transparent border-transparent text-[var(--text-secondary)] hover:bg-white/50"
-                  }`}
-                >
-                  <span className="block font-bold">{ph.label}</span>
-                  <span className="text-[10px] block opacity-80">{ph.desc}</span>
-                </button>
-              ))}
+              ].map((ph) => {
+                const isRealActive = getRealActivePhase(searchedLead) === ph.id;
+                const isViewing = activeCommandPhase === ph.id;
+                return (
+                  <button
+                    key={ph.id}
+                    type="button"
+                    onClick={() => setActiveCommandPhase(ph.id as any)}
+                    className={`p-2.5 rounded-xl text-left border transition-all ${
+                      isViewing
+                        ? "bg-white dark:bg-slate-900 border-indigo-500 text-indigo-600 shadow-2xs font-bold"
+                        : "bg-transparent border-transparent text-[var(--text-secondary)] hover:bg-white/50"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="block font-bold">{ph.label}</span>
+                      {isRealActive && (
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                      )}
+                    </div>
+                    <span className="text-[10px] block opacity-80">{ph.desc}</span>
+                  </button>
+                );
+              })}
             </div>
           </div>
 
@@ -496,36 +534,46 @@ function LacakPesananContent() {
               <div className="p-4 sm:p-5 rounded-2xl border border-indigo-200 dark:border-indigo-900 bg-indigo-50/40 dark:bg-indigo-950/20 text-xs space-y-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <Radio className="w-4 h-4 text-emerald-600 animate-pulse" />
+                    <Radio className={`w-4 h-4 ${searchedLead.webBeacon ? "text-emerald-600 animate-pulse" : "text-slate-400"}`} />
                     <span className="font-bold text-indigo-950 dark:text-indigo-200">
                       Live Tracking GPS Bus (Web-Beacon Real-Time)
                     </span>
                   </div>
-                  <Badge variant="emerald" size="sm">GPS 4G AKTIF</Badge>
+                  {searchedLead.webBeacon ? (
+                    <Badge variant="emerald" size="sm">GPS AKTIF</Badge>
+                  ) : (
+                    <Badge variant="neutral" size="sm">STANDBY</Badge>
+                  )}
                 </div>
 
                 <div className="p-3.5 rounded-xl bg-white dark:bg-slate-900 border border-[var(--border-subtle)] space-y-2">
                   <div className="flex items-center justify-between text-[11px]">
                     <span className="text-[var(--text-muted)]">Sumber Koordinat:</span>
                     <strong className="text-[var(--text-primary)]">
-                      {searchedLead.webBeacon?.driverPhone || "Ponsel Tour Leader Budi Santoso (+6281234567890)"}
+                      {searchedLead.webBeacon?.driverPhone ||
+                        (searchedLead.assignedCrew?.tourLeader
+                          ? `Ponsel TL: ${searchedLead.assignedCrew.tourLeader.name} (${searchedLead.assignedCrew.tourLeader.phone})`
+                          : "Ponsel Tour Leader Ber-SPK")}
                     </strong>
                   </div>
                   <div className="flex items-center justify-between text-[11px]">
                     <span className="text-[var(--text-muted)]">Kecepatan Armada:</span>
                     <span className="font-mono font-bold text-emerald-600">
-                      {searchedLead.webBeacon?.speedKmh || 54} km/jam
+                      {searchedLead.webBeacon?.speedKmh ? `${searchedLead.webBeacon.speedKmh} km/jam` : "0 km/jam (Siaga)"}
                     </span>
                   </div>
                   <div className="flex items-center justify-between text-[11px]">
                     <span className="text-[var(--text-muted)]">Titik Koordinat:</span>
                     <span className="font-mono text-xs text-indigo-600">
-                      {searchedLead.webBeacon?.busLat || -7.7521}, {searchedLead.webBeacon?.busLng || 110.4912}
+                      {searchedLead.webBeacon?.busLat
+                        ? `${searchedLead.webBeacon.busLat}, ${searchedLead.webBeacon.busLng}`
+                        : "Menunggu transmisi GPS aktif"}
                     </span>
                   </div>
                   <div className="p-2.5 rounded-lg bg-slate-50 dark:bg-slate-800 text-[10px] text-[var(--text-secondary)]">
                     <strong>Posisi Terkini:</strong>{" "}
-                    {searchedLead.webBeacon?.statusRundown || "Bus 1 & Bus 2 sedang melintas di Jl. Solo KM 14 menuju Candi Prambanan."}
+                    {searchedLead.webBeacon?.statusRundown ||
+                      "Armada dan kru berada dalam persiapan siaga keberangkatan."}
                   </div>
                 </div>
 

@@ -133,33 +133,42 @@ const DEMO_LEAD_IDS = new Set([
   "ORD-H0-4491",
   "ORD-H1-2233",
   "ORD-DONE-1002",
+  "LEAD-3312",
 ]);
 
 let cachedLeadsRaw: string | null = null;
-let cachedLeadsList: CustomerLeadItem[] = INITIAL_LEADS;
+let cachedLeadsList: CustomerLeadItem[] = [];
 
 export const getLeadsSnapshot = (): CustomerLeadItem[] => {
-  if (typeof window === "undefined") return INITIAL_LEADS;
+  if (typeof window === "undefined") return [];
   const raw = localStorage.getItem("nusatrip_leads");
-  if (!raw) return INITIAL_LEADS;
+  if (!raw) return [];
 
   if (raw !== cachedLeadsRaw) {
     try {
       const parsed: CustomerLeadItem[] = JSON.parse(raw);
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        cachedLeadsList = parsed;
-      } else {
-        cachedLeadsList = INITIAL_LEADS;
+      // Filter ketat: HAPUS SEMUA DATA SIMULASI / DEMO
+      const realOnly = Array.isArray(parsed)
+        ? parsed.filter(
+            (item) => !DEMO_LEAD_IDS.has(item.id) && !item.userId?.startsWith("usr-demo")
+          )
+        : [];
+
+      // Otomatis bersihkan localStorage jika masih ada data demo
+      if (Array.isArray(parsed) && parsed.length !== realOnly.length) {
+        localStorage.setItem("nusatrip_leads", JSON.stringify(realOnly));
       }
+
+      cachedLeadsList = realOnly;
       cachedLeadsRaw = raw;
     } catch {
-      return INITIAL_LEADS;
+      return [];
     }
   }
   return cachedLeadsList;
 };
 
-export const getLeadsServerSnapshot = (): CustomerLeadItem[] => INITIAL_LEADS;
+export const getLeadsServerSnapshot = (): CustomerLeadItem[] => [];
 
 export const useCustomerLeads = (): CustomerLeadItem[] => {
   return useSyncExternalStore(subscribeTourData, getLeadsSnapshot, getLeadsServerSnapshot);

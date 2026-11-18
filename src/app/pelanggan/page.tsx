@@ -98,6 +98,28 @@ function EmptyTabNotice({
   );
 }
 
+const getRealActivePhase = (
+  lead: CustomerLeadItem
+): "masa_tunggu" | "h7_terbuka" | "hari_h_berjalan" | "selesai_h1" => {
+  if (lead.commandCenterPhase) return lead.commandCenterPhase;
+  if (lead.status === "selesai") return "selesai_h1";
+
+  if (lead.departureDate) {
+    const now = new Date();
+    const dep = new Date(lead.departureDate);
+    const diffDays = Math.ceil((dep.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+    const tripDays = lead.days || 2;
+
+    if (diffDays > 7) return "masa_tunggu";
+    if (diffDays >= 1 && diffDays <= 7) return "h7_terbuka";
+    if (diffDays <= 0 && diffDays >= -tripDays) return "hari_h_berjalan";
+    if (diffDays < -tripDays) return "selesai_h1";
+  }
+
+  if (lead.status === "final_h7") return "h7_terbuka";
+  return "masa_tunggu";
+};
+
 export default function CustomerDashboardPage() {
   const customerAuth = useCustomerAuth();
   const leads = useCustomerLeads();
@@ -134,7 +156,7 @@ export default function CustomerDashboardPage() {
   }, [customerAuth]);
 
   // Selected order for command center / negotiation
-  const [selectedOrderId, setSelectedOrderId] = useState<string>("ORD-H0-4491");
+  const [selectedOrderId, setSelectedOrderId] = useState<string>("");
   const [commandPhase, setCommandPhase] = useState<
     "masa_tunggu" | "h7_terbuka" | "hari_h_berjalan" | "selesai_h1"
   >("hari_h_berjalan");
@@ -187,32 +209,14 @@ export default function CustomerDashboardPage() {
     if (activeLead && activeLead.id !== selectedOrderId) {
       setSelectedOrderId(activeLead.id);
       setNegoBidInput(activeLead.customerBid || activeLead.budget || 45000000);
-      setCommandPhase(
-        activeLead.commandCenterPhase ||
-          (activeLead.status === "selesai"
-            ? "selesai_h1"
-            : activeLead.status === "final_h7"
-            ? "h7_terbuka"
-            : activeLead.status === "proses_dss"
-            ? "h7_terbuka"
-            : "masa_tunggu")
-      );
+      setCommandPhase(getRealActivePhase(activeLead));
     }
   }, [activeLead, selectedOrderId]);
 
   const handleSelectOrder = (lead: CustomerLeadItem) => {
     setSelectedOrderId(lead.id);
     setNegoBidInput(lead.customerBid || lead.budget || 45000000);
-    setCommandPhase(
-      lead.commandCenterPhase ||
-        (lead.status === "selesai"
-          ? "selesai_h1"
-          : lead.status === "final_h7"
-          ? "h7_terbuka"
-          : lead.status === "proses_dss"
-          ? "h7_terbuka"
-          : "masa_tunggu")
-    );
+    setCommandPhase(getRealActivePhase(lead));
   };
 
   const handleSendNego = () => {
@@ -637,14 +641,15 @@ export default function CustomerDashboardPage() {
               </div>
             </div>
 
-            {/* Time-Phase Simulator Pills */}
+            {/* Real-time Timeline Stepper */}
             <div className="p-3 rounded-2xl bg-slate-100 dark:bg-slate-800/60 border border-[var(--border-subtle)] space-y-2">
               <div className="flex items-center justify-between text-xs">
                 <span className="font-bold text-[var(--text-primary)]">
-                  Jadwal & Fase Waktu Perjalanan:
+                  Progres Tahapan Waktu Perjalanan Riil:
                 </span>
-                <span className="text-[11px] text-indigo-600 font-bold">
-                  Status Terkunci: {activeLead.commandCenterPhase || activeLead.status}
+                <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                  Fase Berjalan: {getRealActivePhase(activeLead).replace("_", " ").toUpperCase()}
                 </span>
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
@@ -653,21 +658,30 @@ export default function CustomerDashboardPage() {
                   { id: "h7_terbuka", label: "2. Fase H-7", desc: "Buka Vendor & SPK Kru" },
                   { id: "hari_h_berjalan", label: "3. Eksekusi Hari-H", desc: "VIP Clearance & Live GPS" },
                   { id: "selesai_h1", label: "4. Fase H+1", desc: "LPJ Pajak & Rating Komponen" },
-                ].map((ph) => (
-                  <button
-                    key={ph.id}
-                    type="button"
-                    onClick={() => setCommandPhase(ph.id as any)}
-                    className={`p-2.5 rounded-xl text-left border transition-all ${
-                      commandPhase === ph.id
-                        ? "bg-white dark:bg-slate-900 border-indigo-500 text-indigo-600 shadow-xs font-bold"
-                        : "bg-transparent border-transparent text-[var(--text-secondary)] hover:bg-white/40"
-                    }`}
-                  >
-                    <span className="block font-bold">{ph.label}</span>
-                    <span className="text-[10px] block opacity-80">{ph.desc}</span>
-                  </button>
-                ))}
+                ].map((ph) => {
+                  const isRealActive = getRealActivePhase(activeLead) === ph.id;
+                  const isViewing = commandPhase === ph.id;
+                  return (
+                    <button
+                      key={ph.id}
+                      type="button"
+                      onClick={() => setCommandPhase(ph.id as any)}
+                      className={`p-2.5 rounded-xl text-left border transition-all ${
+                        isViewing
+                          ? "bg-white dark:bg-slate-900 border-indigo-500 text-indigo-600 shadow-xs font-bold"
+                          : "bg-transparent border-transparent text-[var(--text-secondary)] hover:bg-white/40"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="block font-bold">{ph.label}</span>
+                        {isRealActive && (
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                        )}
+                      </div>
+                      <span className="text-[10px] block opacity-80">{ph.desc}</span>
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
@@ -866,36 +880,46 @@ export default function CustomerDashboardPage() {
                 <div className="p-4 rounded-2xl border border-indigo-200 dark:border-indigo-900 bg-indigo-50/40 dark:bg-indigo-950/20 text-xs space-y-3">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <Radio className="w-4 h-4 text-emerald-600 animate-pulse" />
+                      <Radio className={`w-4 h-4 ${activeLead.webBeacon ? "text-emerald-600 animate-pulse" : "text-slate-400"}`} />
                       <span className="font-bold text-indigo-950 dark:text-indigo-200">
                         Live Tracking GPS Bus (Web-Beacon Real-Time)
                       </span>
                     </div>
-                    <Badge variant="emerald" size="sm">GPS 4G AKTIF</Badge>
+                    {activeLead.webBeacon ? (
+                      <Badge variant="emerald" size="sm">GPS AKTIF</Badge>
+                    ) : (
+                      <Badge variant="neutral" size="sm">STANDBY</Badge>
+                    )}
                   </div>
 
                   <div className="p-3.5 rounded-xl bg-white dark:bg-slate-900 border border-[var(--border-subtle)] space-y-2">
                     <div className="flex items-center justify-between text-[11px]">
                       <span className="text-[var(--text-muted)]">Sumber Koordinat:</span>
                       <strong className="text-[var(--text-primary)]">
-                        {activeLead.webBeacon?.driverPhone || "Ponsel Tour Leader Budi Santoso (+6281234567890)"}
+                        {activeLead.webBeacon?.driverPhone ||
+                          (activeLead.assignedCrew?.tourLeader
+                            ? `Ponsel TL: ${activeLead.assignedCrew.tourLeader.name} (${activeLead.assignedCrew.tourLeader.phone})`
+                            : "Ponsel Tour Leader Ber-SPK")}
                       </strong>
                     </div>
                     <div className="flex items-center justify-between text-[11px]">
                       <span className="text-[var(--text-muted)]">Kecepatan Armada:</span>
                       <span className="font-mono font-bold text-emerald-600">
-                        {activeLead.webBeacon?.speedKmh || 54} km/jam
+                        {activeLead.webBeacon?.speedKmh ? `${activeLead.webBeacon.speedKmh} km/jam` : "0 km/jam (Siaga)"}
                       </span>
                     </div>
                     <div className="flex items-center justify-between text-[11px]">
                       <span className="text-[var(--text-muted)]">Titik Koordinat:</span>
                       <span className="font-mono text-xs text-indigo-600">
-                        {activeLead.webBeacon?.busLat || -7.7521}, {activeLead.webBeacon?.busLng || 110.4912}
+                        {activeLead.webBeacon?.busLat
+                          ? `${activeLead.webBeacon.busLat}, ${activeLead.webBeacon.busLng}`
+                          : "Menunggu transmisi GPS aktif"}
                       </span>
                     </div>
                     <div className="p-2.5 rounded-lg bg-slate-50 dark:bg-slate-800 text-[10px] text-[var(--text-secondary)]">
                       <strong>Posisi Terkini:</strong>{" "}
-                      {activeLead.webBeacon?.statusRundown || "Bus 1 & Bus 2 sedang melintas di Jl. Solo KM 14 menuju Candi Prambanan."}
+                      {activeLead.webBeacon?.statusRundown ||
+                        "Armada dan kru berada dalam persiapan siaga keberangkatan."}
                     </div>
                   </div>
 

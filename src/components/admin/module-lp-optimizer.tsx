@@ -69,7 +69,7 @@ export function ModuleLpOptimizer({ onSelectTab }: ModuleLpOptimizerProps) {
     const opts = [
       {
         value: "manual",
-        label: "-- Simulasi Bebas / Input Manual (Tanpa Order) --",
+        label: "-- Perhitungan Kustom Mandiri / Tanpa Order Tertaut --",
       },
     ];
 
@@ -99,7 +99,7 @@ export function ModuleLpOptimizer({ onSelectTab }: ModuleLpOptimizerProps) {
   }, [leads]);
 
   // Selected Lead State
-  const [selectedLeadId, setSelectedLeadId] = useState<string>("LEAD-9012");
+  const [selectedLeadId, setSelectedLeadId] = useState<string>("manual");
   const [hasInitialized, setHasInitialized] = useState<boolean>(false);
   const [isManualOverride, setIsManualOverride] = useState<boolean>(false);
 
@@ -157,11 +157,16 @@ export function ModuleLpOptimizer({ onSelectTab }: ModuleLpOptimizerProps) {
 
   // Initial load sync with first available lead or default lead
   useEffect(() => {
-    if (!hasInitialized && leads.length > 0) {
-      const initialLead = leads.find((l) => l.id === selectedLeadId) || leads[0];
-      if (initialLead) {
-        setSelectedLeadId(initialLead.id);
-        syncWithLead(initialLead);
+    if (!hasInitialized) {
+      if (leads.length > 0) {
+        const initialLead = leads.find((l) => l.id === selectedLeadId) || leads[0];
+        if (initialLead) {
+          setSelectedLeadId(initialLead.id);
+          syncWithLead(initialLead);
+        }
+      } else {
+        setSelectedLeadId("manual");
+        setIsManualOverride(true);
       }
       setHasInitialized(true);
     }

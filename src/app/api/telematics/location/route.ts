@@ -24,14 +24,11 @@ export async function GET(request: Request) {
   const cached = latestLocationCache.get(leadId);
   return NextResponse.json({
     success: true,
-    location: cached || {
-      leadId,
-      latitude: -7.7956,
-      longitude: 110.3695,
-      speedKmh: 45,
-      statusRundown: "Perjalanan Menuju Destinasi Utama",
-      updatedAt: new Date().toISOString(),
-    },
+    location: cached || null,
+    status: cached ? "online" : "standby",
+    message: cached
+      ? "Sinyal GPS real-time terhubung"
+      : "Belum ada transmisi sinyal GPS aktif dari Tour Leader / Armada lapangan.",
   });
 }
 

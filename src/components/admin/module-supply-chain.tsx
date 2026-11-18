@@ -119,7 +119,7 @@ export function ModuleSupplyChain({
   const [serviceLevel, setServiceLevel] = useState<ServiceLevel>("standard");
   const [durationDays, setDurationDays] = useState<number>(3);
   const [enforceGroupIntegrity, setEnforceGroupIntegrity] = useState<boolean>(true); // 0-1 Binary ILP (1 Hotel & 1 Resto Terpadu)
-  const [isCrisisSimulated, setIsCrisisSimulated] = useState<boolean>(false);
+  const [isContingencyActive, setIsContingencyActive] = useState<boolean>(false);
   const [crisisLog, setCrisisLog] = useState<string | null>(null);
 
   const [result, setResult] = useState<SupplyChainResult | null>(null);
@@ -127,12 +127,12 @@ export function ModuleSupplyChain({
 
   const fleet = getOptimalFleet(participantCount);
 
-  const handleRunOptimization = (simulatedCrisis = false) => {
+  const handleRunOptimization = (contingencyMode = false) => {
     setIsSolving(true);
     setTimeout(() => {
-      // Modify vendors if crisis is simulated (e.g. primary hotel price spike or overbooked)
+      // Modify vendors if contingency is triggered (e.g. primary hotel price spike or overbooked)
       const adjustedVendors = VENDOR_SERVICES.map((v) => {
-        if (simulatedCrisis && v.id === "v-acc-std-1") {
+        if (contingencyMode && v.id === "v-acc-std-1") {
           return { ...v, unitPrice: v.unitPrice * 1.4, maxCapacity: 20 }; // overbooked spike
         }
         return v;
@@ -155,7 +155,7 @@ export function ModuleSupplyChain({
       setResult(res);
       setIsSolving(false);
 
-      if (simulatedCrisis) {
+      if (contingencyMode) {
         setCrisisLog(
           "MITRA UTAMA OVERBOOKED! Solver secara otomatis mengalihkan alokasi ke Mitra Cadangan (Hotel Bintang 3 Zona Maguwo & Resto Taman Segaran) dalam 12ms. Selisih pagu tetap aman!"
         );
@@ -171,8 +171,8 @@ export function ModuleSupplyChain({
           status: res.feasible ? "optimal" : "infeasible",
           objectiveValue: res.totalCost,
           savings: res.margin,
-          details: simulatedCrisis
-            ? `Re-optimasi darurat H-7 krisis berhasil: ${fleet.description}. Pagu terjaga.`
+          details: contingencyMode
+            ? `Re-optimasi darurat H-7 failover berhasil: ${fleet.description}. Pagu terjaga.`
             : `Optimasi Simplex 0-1 ILP event ${participantCount} Pax (${fleet.description}) berhasil.`,
         });
       }
@@ -180,8 +180,8 @@ export function ModuleSupplyChain({
   };
 
   const handleToggleCrisis = () => {
-    const nextState = !isCrisisSimulated;
-    setIsCrisisSimulated(nextState);
+    const nextState = !isContingencyActive;
+    setIsContingencyActive(nextState);
     handleRunOptimization(nextState);
   };
 
@@ -208,19 +208,19 @@ export function ModuleSupplyChain({
 
         <div className="flex items-center gap-2.5">
           <Button
-            variant={isCrisisSimulated ? "destructive" : "outline"}
+            variant={isContingencyActive ? "destructive" : "outline"}
             size="md"
             onClick={handleToggleCrisis}
             className="gap-2 text-xs font-semibold"
           >
             <ShieldAlert className="w-4 h-4" />
-            <span>{isCrisisSimulated ? "Reset Kontinjensi" : "Uji Kontinjensi H-7"}</span>
+            <span>{isContingencyActive ? "Reset Kontinjensi" : "Uji Kontinjensi H-7"}</span>
           </Button>
           <Button
             variant="gradient"
             size="md"
             isLoading={isSolving}
-            onClick={() => handleRunOptimization(isCrisisSimulated)}
+            onClick={() => handleRunOptimization(isContingencyActive)}
             className="gap-2 text-xs font-semibold"
           >
             <Play className="w-4 h-4 fill-current" />
@@ -338,7 +338,7 @@ export function ModuleSupplyChain({
                 Hasil Keputusan Riset Operasi & Matriks Rantai Pasok
               </h3>
               <span className="text-xs text-[var(--text-subtle)] font-mono">
-                {isCrisisSimulated ? "Mode: Failover Cadangan" : "Mode: Normal Optimal"}
+                {isContingencyActive ? "Mode: Failover Cadangan" : "Mode: Normal Optimal"}
               </span>
             </div>
 

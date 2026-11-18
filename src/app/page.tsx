@@ -100,7 +100,7 @@ const EO_SERVICES = [
     id: "outbound",
     icon: Tent,
     title: "Outbound Training & Leadership",
-    desc: "Instruktur bersertifikasi BNSP dengan simulasi dinamika kelompok, arung jeram, dan modul kepemimpinan.",
+    desc: "Instruktur bersertifikasi BNSP dengan pelatihan dinamika kelompok, arung jeram, dan modul kepemimpinan.",
   },
 ];
 
@@ -477,13 +477,13 @@ export default function HomePage() {
               <div className="flex gap-2">
                 <input
                   type="text"
-                  placeholder="Masukkan Nomor Order (contoh: ORD-H0-4491)..."
+                  placeholder="Masukkan Nomor Order (contoh: LEAD-1234)..."
                   value={quickSearchId}
                   onChange={(e) => setQuickSearchId(e.target.value)}
                   className="flex-1 h-10 px-3.5 rounded-xl border border-[var(--border-default)] bg-[var(--surface-page)] text-xs font-mono font-bold text-[var(--text-primary)]"
                 />
                 {customerAuth ? (
-                  <Link href={`/lacak-pesanan?id=${quickSearchId || "ORD-H0-4491"}`}>
+                  <Link href={`/lacak-pesanan${quickSearchId ? `?id=${quickSearchId}` : ""}`}>
                     <Button size="md" variant="gradient" className="text-xs font-bold shrink-0">
                       Lacak Trip
                     </Button>
@@ -501,13 +501,9 @@ export default function HomePage() {
               </div>
 
               <div className="flex items-center gap-2 text-[11px] text-[var(--text-muted)]">
-                <span>Contoh nomor pesanan:</span>
-                <Link href="/lacak-pesanan?id=ORD-H0-4491" className="text-indigo-600 font-mono hover:underline">
-                  ORD-H0-4491 (Hari-H)
-                </Link>
-                <span>&bull;</span>
-                <Link href="/lacak-pesanan?id=ORD-H7-7721" className="text-indigo-600 font-mono hover:underline">
-                  ORD-H7-7721 (H-7)
+                <span>Belum punya nomor pesanan?</span>
+                <Link href="/kustom-trip" className="text-indigo-600 font-semibold hover:underline">
+                  Rancang Trip B2B Sekarang
                 </Link>
               </div>
             </div>

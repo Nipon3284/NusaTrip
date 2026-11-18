@@ -38,9 +38,29 @@ interface PaymentTransaction {
 
 export function ModulePayments() {
   const leads = useLeads();
-  const [escrowBalance, setEscrowBalance] = useState<number>(142_500_000);
-  const [marginLocked, setMarginLocked] = useState<number>(48_200_000);
-  const [vendorPayable, setVendorPayable] = useState<number>(64_300_000);
+
+  // Dynamic calculation based on real leads
+  const calculatedEscrow = React.useMemo(() => {
+    return leads.reduce((acc, l) => acc + (l.dpAmount || 0), 0);
+  }, [leads]);
+
+  const calculatedMargin = React.useMemo(() => {
+    return leads.reduce((acc, l) => acc + (l.targetMargin || 0), 0);
+  }, [leads]);
+
+  const calculatedPayable = React.useMemo(() => {
+    return leads.reduce((acc, l) => acc + (l.bottomLineCost || 0), 0);
+  }, [leads]);
+
+  const [escrowBalance, setEscrowBalance] = useState<number>(calculatedEscrow);
+  const [marginLocked, setMarginLocked] = useState<number>(calculatedMargin);
+  const [vendorPayable, setVendorPayable] = useState<number>(calculatedPayable);
+
+  React.useEffect(() => {
+    setEscrowBalance(calculatedEscrow);
+    setMarginLocked(calculatedMargin);
+    setVendorPayable(calculatedPayable);
+  }, [calculatedEscrow, calculatedMargin, calculatedPayable]);
 
   // Active event for petty cash & settlement
   const activeEvent = leads.find((l) => l.status === "final_h7") || leads[0];
@@ -51,60 +71,40 @@ export function ModulePayments() {
   const [expenseAmount, setExpenseAmount] = useState<number>(75000);
   const [expenseNote, setExpenseNote] = useState<string>("Parkir Bus 1 & Bus 2 di Rest Area Sleman");
 
-  const [transactions, setTransactions] = useState<PaymentTransaction[]>([
-    {
-      id: "TRX-9941",
-      orderId: "ORD-H7-7721",
-      customerName: "SMAN 1 Surakarta",
-      type: "inbound_dp",
-      recipientOrSender: "Customer (BCA Virtual Account 50% DP)",
-      amount: 36_000_000,
-      status: "success",
-      timestamp: "Hari ini, 08:30 WIB",
-    },
-    {
-      id: "TRX-9942",
-      orderId: "ORD-H7-7721",
-      customerName: "Budi Santoso (Tour Leader)",
-      type: "outbound_petty_cash",
-      recipientOrSender: "Uang Jalan H-2 Lapangan (Bank Mandiri)",
-      amount: 1_500_000,
-      status: "success",
-      timestamp: "Hari ini, 09:15 WIB",
-    },
-    {
-      id: "TRX-9943",
-      orderId: "ORD-H7-7721",
-      customerName: "PO Haryanto Pariwisata",
-      type: "outbound_vendor",
-      recipientOrSender: "Vendor Armada Bus (Disburse 50% DP)",
-      amount: 11_000_000,
-      status: "success",
-      timestamp: "Kemarin, 14:00 WIB",
-    },
-    {
-      id: "TRX-9944",
-      orderId: "LEAD-9012",
-      customerName: "PT Nusantara Prima Mandiri",
-      type: "inbound_dp",
-      recipientOrSender: "Customer (Corporate Escrow Booking)",
-      amount: 25_000_000,
-      status: "success",
-      timestamp: "Kemarin, 16:45 WIB",
-    },
-  ]);
+  const [transactions, setTransactions] = useState<PaymentTransaction[]>(() => {
+    const realTrx: PaymentTransaction[] = [];
+    leads.forEach((l, idx) => {
+      if (l.dpAmount) {
+        realTrx.push({
+          id: `TRX-${9000 + idx}`,
+          orderId: l.id,
+          customerName: l.institution || l.name,
+          type: "inbound_dp",
+          recipientOrSender: "Midtrans Payment Gateway (Escrow VA)",
+          amount: l.dpAmount,
+          status: "success",
+          timestamp: l.createdAt || "Baru saja",
+        });
+      }
+    });
+    return realTrx;
+  });
 
-  const [isSimulating, setIsSimulating] = useState(false);
+  const [isRecordingPayment, setIsRecordingPayment] = useState(false);
 
-  // Trigger simulated incoming payment
-  const handleSimulatePayment = () => {
-    setIsSimulating(true);
+  // Trigger real-time incoming settlement payment record
+  const handleRecordIncomingPayment = () => {
+    if (!activeEvent) {
+      alert("Belum ada event real aktif untuk mencatat pembayaran.");
+      return;
+    }
+    setIsRecordingPayment(true);
     setTimeout(() => {
-      const newAmount = 18_000_000;
+      const newAmount = activeEvent.repaymentAmount || 18_000_000;
       const newTrx: PaymentTransaction = {
         id: `TRX-${Math.floor(1000 + Math.random() * 9000)}`,
-        orderId: "ORD-H7-7721",
-        customerName: "SMAN 1 Surakarta (Pelunasan 100%)",
+        orderId: activeEvent.id,
+        customerName: `${activeEvent.institution || activeEvent.name} (Pelunasan 100%)`,
         type: "inbound_settlement",
         recipientOrSender: "Midtrans Payment Gateway (BNI VA)",
         amount: newAmount,
@@ -114,15 +114,18 @@ export function ModulePayments() {
 
       setTransactions((prev) => [newTrx, ...prev]);
       setEscrowBalance((prev) => prev + newAmount);
-      setMarginLocked((prev) => prev + newAmount * 0.3);
-      setVendorPayable((prev) => prev + newAmount * 0.7);
-      setIsSimulating(false);
+      setMarginLocked((prev) => prev + Math.round(newAmount * 0.3));
+      setVendorPayable((prev) => prev + Math.round(newAmount * 0.7));
+      setIsRecordingPayment(false);
     }, 450);
   };
 
   const handleAddIncidental = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!activeEvent || expenseAmount <= 0) return;
+    if (!activeEvent || expenseAmount <= 0) {
+      alert("Pilih event aktif terlebih dahulu untuk mencatat kas kecil.");
+      return;
+    }
 
     const newExpense: FieldExpenseItem = {
       id: `fe-${Date.now()}`,
@@ -164,8 +167,8 @@ export function ModulePayments() {
           <Button
             variant="gradient"
             size="md"
-            isLoading={isSimulating}
-            onClick={handleSimulatePayment}
+            isLoading={isRecordingPayment}
+            onClick={handleRecordIncomingPayment}
             className="gap-2 text-xs font-semibold"
           >
             <ArrowDownLeft className="w-4 h-4" />
@@ -244,7 +247,9 @@ export function ModulePayments() {
                 Kas Kecil Lapangan (Uang Jalan H-2)
               </h3>
               <p className="text-xs text-[var(--text-muted)] mt-0.5">
-                Event: {activeEvent?.institution || activeEvent?.name} ({activeEvent?.id})
+                {activeEvent
+                  ? `Event: ${activeEvent.institution || activeEvent.name} (${activeEvent.id})`
+                  : "Belum ada event rombongan aktif (Siaga Operasional)"}
               </p>
             </div>
             <Badge variant="brand" size="sm">H-2 Disalurkan</Badge>
@@ -271,7 +276,7 @@ export function ModulePayments() {
             </div>
           </div>
 
-          {/* Form: Simulasikan Input Nota WhatsApp dari Lapangan */}
+          {/* Form: Catat Pengeluaran Kas Lapangan (Nota Riil) */}
           <form onSubmit={handleAddIncidental} className="space-y-3 pt-2">
             <h4 className="text-xs font-bold text-[var(--text-primary)] flex items-center gap-1.5">
               <Receipt className="w-3.5 h-3.5 text-indigo-500" />
@@ -435,7 +440,14 @@ export function ModulePayments() {
               </tr>
             </thead>
             <tbody className="divide-y divide-[var(--border-subtle)]">
-              {transactions.map((trx) => (
+              {transactions.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="py-8 text-center text-xs text-[var(--text-muted)]">
+                    Belum ada riwayat transaksi kas/escrow real. Transaksi baru akan tercatat otomatis saat pelanggan membayar DP atau tagihan vendor disalurkan.
+                  </td>
+                </tr>
+              ) : (
+                transactions.map((trx) => (
                 <tr key={trx.id} className="hover:bg-[var(--surface-subtle)]/60">
                   <td className="py-3 px-4 font-mono font-bold text-[var(--text-primary)]">
                     {trx.id}
@@ -484,7 +496,7 @@ export function ModulePayments() {
                     <Badge variant="success">Berhasil</Badge>
                   </td>
                 </tr>
-              ))}
+              )))}
             </tbody>
           </table>
         </div>

@@ -37,6 +37,7 @@ import type {
   FreelancerRequirement,
 } from "@/lib/optimizer/types";
 import { Modal } from "@/components/ui/modal";
+import { useCustomerLeads } from "@/lib/data/tour-store";
 
 interface CrewMemberItem {
   id: string;
@@ -131,6 +132,7 @@ export function ModuleAssignment({
 }: {
   onLogAdd?: (log: any) => void;
 }) {
+  const leads = useCustomerLeads();
   const [eventDays, setEventDays] = useState<number>(3);
   const [paxCount, setPaxCount] = useState<number>(120);
   const [budgetForFreelancers, setBudgetForFreelancers] = useState<number>(6_500_000);
@@ -148,7 +150,7 @@ export function ModuleAssignment({
       if (onLogAdd) {
         onLogAdd({
           id: `log-${Date.now()}`,
-          orderId: "ORD-H7-7721",
+          orderId: leads[0]?.id || "ORDER-OPS",
           type: "freelancer_assignment",
           input: { eventDays, budgetForFreelancers, paxCount },
           result: {

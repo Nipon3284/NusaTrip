@@ -26,6 +26,11 @@ import {
   Radio,
   Copy,
   FileCheck2,
+  Plus,
+  Trash2,
+  Check,
+  Mail,
+  Users,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -34,6 +39,8 @@ import {
   useCustomerLeads,
   updateLeadStatus,
   updateLeadDetails,
+  addCustomerLead,
+  purgeSimulatedLeads,
   type CustomerLeadItem,
   type LeadStatus,
 } from "@/lib/data/tour-store";
@@ -58,6 +65,72 @@ export function ModuleLeads({ onSelectTab }: { onSelectTab: (tab: AdminTab) => v
   const [counterText, setCounterText] = useState("");
   const [customBidInput, setCustomBidInput] = useState<number | string>(0);
   const [isCopied, setIsCopied] = useState(false);
+
+  // Modal input pesanan real baru
+  const [isNewLeadModalOpen, setIsNewLeadModalOpen] = useState(false);
+  const [isSubmittingNewLead, setIsSubmittingNewLead] = useState(false);
+  const [purgeSuccessMsg, setPurgeSuccessMsg] = useState<string | null>(null);
+
+  const initialNewLeadForm = {
+    name: "",
+    institution: "",
+    phone: "",
+    userEmail: "",
+    destination: "Yogyakarta",
+    category: "Company Gathering & Outing",
+    pax: 50,
+    days: 3,
+    hotel: "Bintang 3",
+    budget: 35000000,
+    departureDate: "",
+    notes: "",
+  };
+  const [newLeadForm, setNewLeadForm] = useState(initialNewLeadForm);
+
+  const handlePurgeSimulated = () => {
+    purgeSimulatedLeads();
+    setPurgeSuccessMsg("Seluruh data simulasi berhasil dibersihkan! Status sistem kini 100% data operasional real.");
+    setTimeout(() => setPurgeSuccessMsg(null), 4000);
+  };
+
+  const handleCreateRealLead = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newLeadForm.name.trim() || !newLeadForm.phone.trim()) {
+      alert("Nama pemesan/PIC dan nomor WhatsApp wajib diisi.");
+      return;
+    }
+
+    setIsSubmittingNewLead(true);
+    try {
+      await addCustomerLead({
+        name: newLeadForm.name.trim(),
+        institution: newLeadForm.institution.trim() || undefined,
+        phone: newLeadForm.phone.trim(),
+        userEmail: newLeadForm.userEmail.trim() || undefined,
+        destination: newLeadForm.destination,
+        category: newLeadForm.category,
+        pax: Number(newLeadForm.pax) || 20,
+        days: Number(newLeadForm.days) || 2,
+        hotel: newLeadForm.hotel,
+        budget: Number(newLeadForm.budget) || 20000000,
+        customerBid: Number(newLeadForm.budget) || 20000000,
+        departureDate: newLeadForm.departureDate || undefined,
+        notes: newLeadForm.notes.trim() || "Input manual order real oleh admin operasional.",
+        orderTrack: "kustom_b2b",
+        commandCenterPhase: "masa_tunggu",
+        status: "baru",
+      });
+
+      setIsNewLeadModalOpen(false);
+      setNewLeadForm(initialNewLeadForm);
+      setPurgeSuccessMsg("Pesanan real baru berhasil disimpan ke sistem CRM!");
+      setTimeout(() => setPurgeSuccessMsg(null), 4000);
+    } catch {
+      alert("Gagal menambahkan pesanan real. Silakan periksa kembali.");
+    } finally {
+      setIsSubmittingNewLead(false);
+    }
+  };
 
   const filteredLeads = leads.filter((lead) => {
     if (activeFilter === "semua") return true;
@@ -181,13 +254,36 @@ export function ModuleLeads({ onSelectTab }: { onSelectTab: (tab: AdminTab) => v
 
   return (
     <div className="space-y-6">
-      {/* Header Banner */}
-      <div className="p-6 rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-card)] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <span className="text-xs font-bold text-indigo-600 uppercase tracking-widest flex items-center gap-1.5">
-            <SlidersHorizontal className="w-3.5 h-3.5" />
-            <span>CRM Pipeline & Ruang Negosiasi DSS</span>
+      {/* Purge Notification */}
+      {purgeSuccessMsg && (
+        <div className="p-3.5 rounded-xl border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-200 text-xs flex items-center justify-between">
+          <span className="font-semibold flex items-center gap-2">
+            <Check className="w-4 h-4 text-emerald-600" />
+            {purgeSuccessMsg}
           </span>
+          <button
+            type="button"
+            onClick={() => setPurgeSuccessMsg(null)}
+            className="text-[11px] font-bold underline hover:text-emerald-900"
+          >
+            Tutup
+          </button>
+        </div>
+      )}
+
+      {/* Header Banner */}
+      <div className="p-6 rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-card)] flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-xs font-bold text-indigo-600 uppercase tracking-widest flex items-center gap-1.5">
+              <SlidersHorizontal className="w-3.5 h-3.5" />
+              <span>CRM Pipeline & Ruang Negosiasi DSS</span>
+            </span>
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              Mode Data Real (Bukan Simulasi)
+            </span>
+          </div>
           <h2 className="text-xl font-bold text-[var(--text-primary)] mt-1">
             Manajemen Leads & Pengendali Shadow Price
           </h2>
@@ -196,23 +292,46 @@ export function ModuleLeads({ onSelectTab }: { onSelectTab: (tab: AdminTab) => v
           </p>
         </div>
 
-        {/* Filter Pills */}
-        <div className="flex items-center gap-1.5 flex-wrap">
-          {(["semua", "baru", "negosiasi", "menunggu_dp", "proses_dss", "final_h7", "selesai"] as const).map((st) => (
-            <button
-              key={st}
-              type="button"
-              onClick={() => setActiveFilter(st)}
-              className={`px-3 py-1.5 rounded-xl text-xs font-medium capitalize transition-all ${
-                activeFilter === st
-                  ? "bg-indigo-600 text-white shadow-xs"
-                  : "bg-[var(--surface-subtle)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
-              }`}
-            >
-              {st === "semua" ? `Semua (${leads.length})` : `${STATUS_CONFIG[st]?.label || st} (${leads.filter((l) => l.status === st).length})`}
-            </button>
-          ))}
+        {/* Action Buttons: Input Real Order & Purge */}
+        <div className="flex items-center gap-2 flex-wrap">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={handlePurgeSimulated}
+            className="text-xs gap-1.5 text-rose-600 dark:text-rose-400 border-rose-200 dark:border-rose-900 hover:bg-rose-50 dark:hover:bg-rose-950/40"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+            <span>Bersihkan Data Simulasi</span>
+          </Button>
+
+          <Button
+            size="sm"
+            variant="gradient"
+            onClick={() => setIsNewLeadModalOpen(true)}
+            className="text-xs gap-1.5 font-bold shadow-xs"
+          >
+            <Plus className="w-4 h-4" />
+            <span>+ Input Pesanan Real Baru</span>
+          </Button>
         </div>
+      </div>
+
+      {/* Filter Pills */}
+      <div className="flex items-center gap-1.5 flex-wrap">
+        {(["semua", "baru", "negosiasi", "menunggu_dp", "proses_dss", "final_h7", "selesai"] as const).map((st) => (
+          <button
+            key={st}
+            type="button"
+            onClick={() => setActiveFilter(st)}
+            className={`px-3 py-1.5 rounded-xl text-xs font-medium capitalize transition-all ${
+              activeFilter === st
+                ? "bg-indigo-600 text-white shadow-xs font-bold"
+                : "bg-[var(--surface-subtle)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+            }`}
+          >
+            {st === "semua" ? `Semua (${leads.length})` : `${STATUS_CONFIG[st]?.label || st} (${leads.filter((l) => l.status === st).length})`}
+          </button>
+        ))}
       </div>
 
       {/* Leads List */}
@@ -341,10 +460,29 @@ export function ModuleLeads({ onSelectTab }: { onSelectTab: (tab: AdminTab) => v
         })}
 
         {filteredLeads.length === 0 && (
-          <div className="p-12 text-center rounded-2xl border border-dashed border-[var(--border-default)] bg-[var(--surface-card)]">
-            <Inbox className="w-10 h-10 text-[var(--text-muted)] mx-auto mb-2 opacity-40" />
-            <h4 className="text-sm font-semibold text-[var(--text-primary)]">Tidak ada pesanan pada status ini</h4>
-            <p className="text-xs text-[var(--text-muted)] mt-1">Pilih filter &quot;Semua&quot; untuk melihat seluruh pipeline CRM.</p>
+          <div className="p-12 text-center rounded-2xl border border-dashed border-[var(--border-default)] bg-[var(--surface-card)] space-y-3">
+            <div className="w-12 h-12 rounded-2xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 flex items-center justify-center mx-auto">
+              <Inbox className="w-6 h-6" />
+            </div>
+            <div>
+              <h4 className="text-sm font-bold text-[var(--text-primary)]">
+                Belum Ada Pesanan Real Masuk
+              </h4>
+              <p className="text-xs text-[var(--text-secondary)] mt-1 max-w-md mx-auto leading-relaxed">
+                Data simulasi telah dibersihkan secara permanen. Pesanan real yang diajukan pelanggan melalui Wizard Kustom B2B atau yang diinput manual oleh admin akan ditampilkan di sini.
+              </p>
+            </div>
+            <div className="pt-2">
+              <Button
+                size="sm"
+                variant="gradient"
+                onClick={() => setIsNewLeadModalOpen(true)}
+                className="gap-1.5 text-xs font-bold shadow-xs"
+              >
+                <Plus className="w-4 h-4" />
+                <span>+ Input Pesanan Real Pertama</span>
+              </Button>
+            </div>
           </div>
         )}
       </div>
@@ -649,6 +787,211 @@ export function ModuleLeads({ onSelectTab }: { onSelectTab: (tab: AdminTab) => v
               </div>
             )}
           </div>
+        </Modal>
+      )}
+
+      {/* Modal Input Pesanan Real Baru */}
+      {isNewLeadModalOpen && (
+        <Modal
+          isOpen={isNewLeadModalOpen}
+          onClose={() => setIsNewLeadModalOpen(false)}
+          title="Input Pesanan Real Baru (Operasional)"
+          description="Masukkan pesanan riil dari klien / instansi. Sistem akan langsung mengalkulasi modal dasar (Z-Minimum) dan memasukkannya ke pipeline CRM."
+          maxWidth="2xl"
+        >
+          <form onSubmit={handleCreateRealLead} className="space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-semibold text-[var(--text-primary)] mb-1">
+                  Nama PIC / Pemesan <span className="text-rose-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Contoh: Bpk. Ahmad Fauzi"
+                  value={newLeadForm.name}
+                  onChange={(e) => setNewLeadForm({ ...newLeadForm, name: e.target.value })}
+                  className="w-full px-3 py-2 text-xs rounded-xl border border-[var(--border-default)] bg-[var(--surface-page)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-[var(--text-primary)] mb-1">
+                  Instansi / Perusahaan
+                </label>
+                <input
+                  type="text"
+                  placeholder="Contoh: PT Sumber Makmur Abadi"
+                  value={newLeadForm.institution}
+                  onChange={(e) => setNewLeadForm({ ...newLeadForm, institution: e.target.value })}
+                  className="w-full px-3 py-2 text-xs rounded-xl border border-[var(--border-default)] bg-[var(--surface-page)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-[var(--text-primary)] mb-1">
+                  Nomor WhatsApp <span className="text-rose-500">*</span>
+                </label>
+                <input
+                  type="tel"
+                  required
+                  placeholder="Contoh: 081234567890"
+                  value={newLeadForm.phone}
+                  onChange={(e) => setNewLeadForm({ ...newLeadForm, phone: e.target.value })}
+                  className="w-full px-3 py-2 text-xs rounded-xl border border-[var(--border-default)] bg-[var(--surface-page)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-[var(--text-primary)] mb-1">
+                  Email Pelanggan (Opsional)
+                </label>
+                <input
+                  type="email"
+                  placeholder="Contoh: ahmad@perusahaan.co.id"
+                  value={newLeadForm.userEmail}
+                  onChange={(e) => setNewLeadForm({ ...newLeadForm, userEmail: e.target.value })}
+                  className="w-full px-3 py-2 text-xs rounded-xl border border-[var(--border-default)] bg-[var(--surface-page)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-[var(--text-primary)] mb-1">
+                  Destinasi Wisata
+                </label>
+                <select
+                  value={newLeadForm.destination}
+                  onChange={(e) => setNewLeadForm({ ...newLeadForm, destination: e.target.value })}
+                  className="w-full px-3 py-2 text-xs rounded-xl border border-[var(--border-default)] bg-[var(--surface-page)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                >
+                  <option value="Yogyakarta">Yogyakarta (Borobudur, Prambanan, Malioboro)</option>
+                  <option value="Bali">Bali (Kuta, Ubud, Nusa Penida)</option>
+                  <option value="Lombok">Lombok (Mandalika, Gili Trawangan)</option>
+                  <option value="Malang & Bromo">Malang & Bromo (Batu, Sunrise Bromo)</option>
+                  <option value="Labuan Bajo">Labuan Bajo (Komodo, Padar Island)</option>
+                  <option value="Bandung">Bandung (Lembang, Ciwidey)</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-[var(--text-primary)] mb-1">
+                  Kategori Trip
+                </label>
+                <select
+                  value={newLeadForm.category}
+                  onChange={(e) => setNewLeadForm({ ...newLeadForm, category: e.target.value })}
+                  className="w-full px-3 py-2 text-xs rounded-xl border border-[var(--border-default)] bg-[var(--surface-page)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                >
+                  <option value="Company Gathering & Outing">Company Gathering & Outing</option>
+                  <option value="Study Tour & Kunjungan Edukasi">Study Tour & Kunjungan Edukasi</option>
+                  <option value="Rapat Kerja / MICE B2B">Rapat Kerja / MICE B2B</option>
+                  <option value="Family Gathering / Paguyuban">Family Gathering / Paguyuban</option>
+                  <option value="Trip Komunitas Khusus">Trip Komunitas Khusus</option>
+                </select>
+              </div>
+
+              <div className="grid grid-cols-3 gap-2">
+                <div>
+                  <label className="block text-xs font-semibold text-[var(--text-primary)] mb-1">
+                    Peserta (Pax)
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={newLeadForm.pax}
+                    onChange={(e) => setNewLeadForm({ ...newLeadForm, pax: Number(e.target.value) || 1 })}
+                    className="w-full px-2.5 py-2 text-xs rounded-xl border border-[var(--border-default)] bg-[var(--surface-page)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-[var(--text-primary)] mb-1">
+                    Durasi (Hari)
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={newLeadForm.days}
+                    onChange={(e) => setNewLeadForm({ ...newLeadForm, days: Number(e.target.value) || 1 })}
+                    className="w-full px-2.5 py-2 text-xs rounded-xl border border-[var(--border-default)] bg-[var(--surface-page)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-[var(--text-primary)] mb-1">
+                    Hotel
+                  </label>
+                  <select
+                    value={newLeadForm.hotel}
+                    onChange={(e) => setNewLeadForm({ ...newLeadForm, hotel: e.target.value })}
+                    className="w-full px-1.5 py-2 text-xs rounded-xl border border-[var(--border-default)] bg-[var(--surface-page)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  >
+                    <option value="Bintang 2">Bintang 2</option>
+                    <option value="Bintang 3">Bintang 3</option>
+                    <option value="Bintang 4">Bintang 4</option>
+                    <option value="Resort / Villa">Resort</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-[var(--text-primary)] mb-1">
+                  Pagu Anggaran / Tawaran (Rp)
+                </label>
+                <input
+                  type="number"
+                  step="500000"
+                  value={newLeadForm.budget}
+                  onChange={(e) => setNewLeadForm({ ...newLeadForm, budget: Number(e.target.value) || 0 })}
+                  className="w-full px-3 py-2 text-xs rounded-xl border border-[var(--border-default)] bg-[var(--surface-page)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-indigo-500 font-bold text-indigo-700 dark:text-indigo-300"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-[var(--text-primary)] mb-1">
+                  Tanggal Rencana Berangkat
+                </label>
+                <input
+                  type="date"
+                  value={newLeadForm.departureDate}
+                  onChange={(e) => setNewLeadForm({ ...newLeadForm, departureDate: e.target.value })}
+                  className="w-full px-3 py-2 text-xs rounded-xl border border-[var(--border-default)] bg-[var(--surface-page)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-[var(--text-primary)] mb-1">
+                  Catatan Kebutuhan Khusus
+                </label>
+                <input
+                  type="text"
+                  placeholder="Contoh: Butuh 2 bus eksekutif, outbound, gala dinner"
+                  value={newLeadForm.notes}
+                  onChange={(e) => setNewLeadForm({ ...newLeadForm, notes: e.target.value })}
+                  className="w-full px-3 py-2 text-xs rounded-xl border border-[var(--border-default)] bg-[var(--surface-page)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+            </div>
+
+            <div className="pt-3 border-t border-[var(--border-subtle)] flex items-center justify-end gap-2">
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                onClick={() => setIsNewLeadModalOpen(false)}
+              >
+                Batal
+              </Button>
+              <Button
+                type="submit"
+                variant="gradient"
+                size="sm"
+                disabled={isSubmittingNewLead}
+                className="font-bold shadow-xs gap-1.5"
+              >
+                <Check className="w-3.5 h-3.5" />
+                <span>{isSubmittingNewLead ? "Menyimpan..." : "Simpan Pesanan Real"}</span>
+              </Button>
+            </div>
+          </form>
         </Modal>
       )}
     </div>

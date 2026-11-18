@@ -51,7 +51,7 @@ export function AdminSidebar({
   onToggleCollapse,
 }: AdminSidebarProps) {
   const [collapsedInternal, setCollapsedInternal] = useState(false);
-  const [showSimulations, setShowSimulations] = useState(false);
+  const [showOptimizationModules, setShowOptimizationModules] = useState(false);
   const collapsed = isCollapsed !== undefined && onToggleCollapse ? isCollapsed : collapsedInternal;
   const toggleCollapse = onToggleCollapse || (() => setCollapsedInternal((prev) => !prev));
   
@@ -104,7 +104,7 @@ export function AdminSidebar({
   ];
 
   // Secondary Solvers (Audited - Kept as secondary tools without cluttering)
-  const simulationNavItems: {
+  const optimizationNavItems: {
     id: AdminTab;
     label: string;
     icon: React.ReactNode;
@@ -208,23 +208,23 @@ export function AdminSidebar({
             </nav>
           </div>
 
-          {/* Expandable Secondary Simulators (Hasil Audit: Opsional & Rapi) */}
+          {/* Expandable Secondary Solvers */}
           {!collapsed && (
             <div className="pt-2 border-t border-[var(--border-subtle)]">
               <button
                 type="button"
-                onClick={() => setShowSimulations(!showSimulations)}
+                onClick={() => setShowOptimizationModules(!showOptimizationModules)}
                 className="w-full flex items-center justify-between px-3 py-1.5 text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider hover:text-[var(--text-primary)] transition-colors"
               >
                 <span>Modul Optimasi Solver Riset Operasi</span>
                 <ChevronDown
-                  className={`w-3.5 h-3.5 transition-transform ${showSimulations ? "rotate-180" : ""}`}
+                  className={`w-3.5 h-3.5 transition-transform ${showOptimizationModules ? "rotate-180" : ""}`}
                 />
               </button>
 
-              {showSimulations && (
+              {showOptimizationModules && (
                 <nav className="space-y-0.5 mt-1 animate-in fade-in duration-150">
-                  {simulationNavItems.map((item) => {
+                  {optimizationNavItems.map((item) => {
                     const isActive = currentTab === item.id;
                     return (
                       <button
