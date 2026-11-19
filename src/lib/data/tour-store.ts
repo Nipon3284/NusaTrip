@@ -62,6 +62,22 @@ if (typeof window !== "undefined") {
       }
     })
     .catch(() => {});
+
+  fetch("/api/leads")
+    .then((r) => {
+      if (r.ok) return r.json();
+      return null;
+    })
+    .then((d) => {
+      if (d && Array.isArray(d.leads) && d.leads.length > 0) {
+        const stored = localStorage.getItem("nusatrip_leads");
+        if (!stored || stored === "[]") {
+          localStorage.setItem("nusatrip_leads", JSON.stringify(d.leads));
+          emitChange();
+        }
+      }
+    })
+    .catch(() => {});
 }
 
 // ─── PACKAGES STORE ───────────────────────────────────────────
@@ -136,13 +152,16 @@ const DEMO_LEAD_IDS = new Set([
   "LEAD-3312",
 ]);
 
+// Referensi array kosong konstan untuk menjamin stabilitas useSyncExternalStore di semua browser
+const EMPTY_LEADS: CustomerLeadItem[] = [];
+
 let cachedLeadsRaw: string | null = null;
-let cachedLeadsList: CustomerLeadItem[] = [];
+let cachedLeadsList: CustomerLeadItem[] = EMPTY_LEADS;
 
 export const getLeadsSnapshot = (): CustomerLeadItem[] => {
-  if (typeof window === "undefined") return [];
+  if (typeof window === "undefined") return EMPTY_LEADS;
   const raw = localStorage.getItem("nusatrip_leads");
-  if (!raw) return [];
+  if (!raw) return EMPTY_LEADS;
 
   if (raw !== cachedLeadsRaw) {
     try {
@@ -152,7 +171,7 @@ export const getLeadsSnapshot = (): CustomerLeadItem[] => {
         ? parsed.filter(
             (item) => !DEMO_LEAD_IDS.has(item.id) && !item.userId?.startsWith("usr-demo")
           )
-        : [];
+        : EMPTY_LEADS;
 
       // Otomatis bersihkan localStorage jika masih ada data demo
       if (Array.isArray(parsed) && parsed.length !== realOnly.length) {
@@ -162,13 +181,13 @@ export const getLeadsSnapshot = (): CustomerLeadItem[] => {
       cachedLeadsList = realOnly;
       cachedLeadsRaw = raw;
     } catch {
-      return [];
+      return EMPTY_LEADS;
     }
   }
   return cachedLeadsList;
 };
 
-export const getLeadsServerSnapshot = (): CustomerLeadItem[] => [];
+export const getLeadsServerSnapshot = (): CustomerLeadItem[] => EMPTY_LEADS;
 
 export const useCustomerLeads = (): CustomerLeadItem[] => {
   return useSyncExternalStore(subscribeTourData, getLeadsSnapshot, getLeadsServerSnapshot);
@@ -180,15 +199,15 @@ export const useLeads = useCustomerLeads;
  * Menghapus seluruh data simulasi/demo yang mungkin tersimpan di localStorage browser
  */
 export const purgeSimulatedLeads = (): CustomerLeadItem[] => {
-  if (typeof window === "undefined") return [];
+  if (typeof window === "undefined") return EMPTY_LEADS;
   const raw = localStorage.getItem("nusatrip_leads");
   if (!raw) {
     localStorage.setItem("nusatrip_leads", JSON.stringify([]));
     localStorage.setItem("nusatrip_data_mode", "real");
-    cachedLeadsList = [];
+    cachedLeadsList = EMPTY_LEADS;
     cachedLeadsRaw = "[]";
     emitChange();
-    return [];
+    return EMPTY_LEADS;
   }
 
   try {
@@ -197,7 +216,7 @@ export const purgeSimulatedLeads = (): CustomerLeadItem[] => {
       ? parsed.filter(
           (item) => !DEMO_LEAD_IDS.has(item.id) && !item.userId?.startsWith("usr-demo")
         )
-      : [];
+      : EMPTY_LEADS;
     localStorage.setItem("nusatrip_leads", JSON.stringify(realOnly));
     localStorage.setItem("nusatrip_data_mode", "real");
     cachedLeadsList = realOnly;
@@ -207,10 +226,10 @@ export const purgeSimulatedLeads = (): CustomerLeadItem[] => {
   } catch {
     localStorage.setItem("nusatrip_leads", JSON.stringify([]));
     localStorage.setItem("nusatrip_data_mode", "real");
-    cachedLeadsList = [];
+    cachedLeadsList = EMPTY_LEADS;
     cachedLeadsRaw = "[]";
     emitChange();
-    return [];
+    return EMPTY_LEADS;
   }
 };
 

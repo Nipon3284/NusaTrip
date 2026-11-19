@@ -1,11 +1,11 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import dynamic from "next/dynamic";
 import { AdminSidebar, type AdminTab } from "@/components/admin/admin-sidebar";
 import { ModuleCmsPackages } from "@/components/admin/module-cms-packages";
 import { ModuleLeads } from "@/components/admin/module-leads";
 import { ModuleOverview } from "@/components/admin/module-overview";
-import { ModuleMitraMapping } from "@/components/admin/module-mitra-mapping";
 import { ModuleLpOptimizer } from "@/components/admin/module-lp-optimizer";
 import { ModuleSupplyChain } from "@/components/admin/module-supply-chain";
 import { ModuleConsolidation } from "@/components/admin/module-consolidation";
@@ -14,6 +14,7 @@ import { ModuleAssignment } from "@/components/admin/module-assignment";
 import { ModuleItineraryCatering } from "@/components/admin/module-itinerary-catering";
 import { ModulePayments } from "@/components/admin/module-payments";
 import { ModuleLogs } from "@/components/admin/module-logs";
+import { saveCustomerLeads } from "@/lib/data/tour-store";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/ui/logo";
 import {
@@ -24,6 +25,20 @@ import {
 } from "lucide-react";
 import type { OptimizationLog } from "@/lib/optimizer/types";
 
+// Dynamic import untuk module peta GIS (Google Maps Platform) agar tidak memberatkan chunk awal & bebas SSR error
+const ModuleMitraMapping = dynamic(
+  () => import("@/components/admin/module-mitra-mapping").then((mod) => mod.ModuleMitraMapping),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="w-full h-96 flex flex-col items-center justify-center p-8 bg-[var(--surface-card)] rounded-2xl border border-[var(--border-subtle)] text-xs text-[var(--text-muted)] space-y-3">
+        <div className="w-8 h-8 border-2 border-[var(--brand-primary)] border-t-transparent rounded-full animate-spin" />
+        <p className="font-semibold text-[var(--text-secondary)]">Menghubungkan Peta Mitra & GIS...</p>
+      </div>
+    ),
+  }
+);
+
 export default function InternalGatePage() {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [isCheckingAuth, setIsCheckingAuth] = useState<boolean>(true);
@@ -32,7 +47,7 @@ export default function InternalGatePage() {
   const [authError, setAuthError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const [currentTab, setCurrentTab] = useState<AdminTab>("mitra-mapping");
+  const [currentTab, setCurrentTab] = useState<AdminTab>("overview");
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [logs, setLogs] = useState<OptimizationLog[]>([]);
 
@@ -40,7 +55,18 @@ export default function InternalGatePage() {
     fetch("/api/auth")
       .then((res) => res.json())
       .then((data) => {
-        setIsAuthenticated(Boolean(data.authenticated));
+        const authed = Boolean(data.authenticated);
+        setIsAuthenticated(authed);
+        if (authed) {
+          fetch("/api/leads")
+            .then((r) => (r.ok ? r.json() : null))
+            .then((leadData) => {
+              if (leadData && Array.isArray(leadData.leads) && leadData.leads.length > 0) {
+                saveCustomerLeads(leadData.leads);
+              }
+            })
+            .catch(() => {});
+        }
       })
       .catch(() => {
         setIsAuthenticated(false);
@@ -65,6 +91,14 @@ export default function InternalGatePage() {
 
       if (res.ok && data.success) {
         setIsAuthenticated(true);
+        fetch("/api/leads")
+          .then((r) => (r.ok ? r.json() : null))
+          .then((leadData) => {
+            if (leadData && Array.isArray(leadData.leads) && leadData.leads.length > 0) {
+              saveCustomerLeads(leadData.leads);
+            }
+          })
+          .catch(() => {});
       } else {
         setAuthError(data.message || "ID Pegawai atau PIN Otorisasi tidak valid");
       }
