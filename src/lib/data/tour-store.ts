@@ -70,11 +70,8 @@ if (typeof window !== "undefined") {
     })
     .then((d) => {
       if (d && Array.isArray(d.leads) && d.leads.length > 0) {
-        const stored = localStorage.getItem("nusatrip_leads");
-        if (!stored || stored === "[]") {
-          localStorage.setItem("nusatrip_leads", JSON.stringify(d.leads));
-          emitChange();
-        }
+        localStorage.setItem("nusatrip_leads", JSON.stringify(d.leads));
+        emitChange();
       }
     })
     .catch(() => {});
@@ -233,10 +230,18 @@ export const purgeSimulatedLeads = (): CustomerLeadItem[] => {
   }
 };
 
-export const saveCustomerLeads = (leads: CustomerLeadItem[]) => {
+export const saveCustomerLeads = (leads: CustomerLeadItem[], syncToServer = true) => {
   if (typeof window === "undefined") return;
   localStorage.setItem("nusatrip_leads", JSON.stringify(leads));
   emitChange();
+
+  if (syncToServer) {
+    fetch("/api/leads", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ leads }),
+    }).catch(() => {});
+  }
 };
 
 export const addCustomerLead = async (

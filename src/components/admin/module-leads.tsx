@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Inbox,
   UserCheck,
@@ -31,6 +31,7 @@ import {
   Check,
   Mail,
   Users,
+  RotateCw,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -41,6 +42,7 @@ import {
   updateLeadDetails,
   addCustomerLead,
   purgeSimulatedLeads,
+  saveCustomerLeads,
   type CustomerLeadItem,
   type LeadStatus,
 } from "@/lib/data/tour-store";
@@ -70,6 +72,33 @@ export function ModuleLeads({ onSelectTab }: { onSelectTab: (tab: AdminTab) => v
   const [isNewLeadModalOpen, setIsNewLeadModalOpen] = useState(false);
   const [isSubmittingNewLead, setIsSubmittingNewLead] = useState(false);
   const [purgeSuccessMsg, setPurgeSuccessMsg] = useState<string | null>(null);
+
+  // Cloud sync states
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [lastSyncTime, setLastSyncTime] = useState<string | null>(null);
+
+  const fetchCloudLeads = async () => {
+    setIsSyncing(true);
+    try {
+      const res = await fetch("/api/leads", { cache: "no-store" });
+      if (res.ok) {
+        const data = await res.json();
+        if (data && Array.isArray(data.leads)) {
+          saveCustomerLeads(data.leads, false);
+          setLastSyncTime(
+            new Date().toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" }) + " WIB"
+          );
+        }
+      }
+    } catch {
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchCloudLeads();
+  }, []);
 
   const initialNewLeadForm = {
     name: "",
@@ -292,8 +321,20 @@ export function ModuleLeads({ onSelectTab }: { onSelectTab: (tab: AdminTab) => v
           </p>
         </div>
 
-        {/* Action Buttons: Input Real Order & Purge */}
+        {/* Action Buttons: Input Real Order, Cloud Sync & Purge */}
         <div className="flex items-center gap-2 flex-wrap">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={fetchCloudLeads}
+            disabled={isSyncing}
+            className="text-xs gap-1.5 border-[var(--border-subtle)] hover:bg-[var(--surface-hover)] text-[var(--text-secondary)]"
+            title="Ambil data real terbaru dari server database cloud"
+          >
+            <RotateCw className={`w-3.5 h-3.5 ${isSyncing ? "animate-spin text-indigo-600" : ""}`} />
+            <span>{isSyncing ? "Menyinkronkan..." : lastSyncTime ? `Sinkron (${lastSyncTime})` : "Sinkronkan Cloud"}</span>
+          </Button>
+
           <Button
             size="sm"
             variant="outline"

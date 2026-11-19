@@ -234,6 +234,18 @@ export async function getDbLeads(): Promise<CustomerLeadItem[]> {
     return INITIAL_LEADS;
   }
 
+  // 1. Coba ambil snapshot utuh dari tbl_konfigurasi_sistem (menjamin kelengkapan data & field expenses)
+  try {
+    const rawSnapshot = await getDbSystemConfig("nusatrip_crm_leads");
+    if (rawSnapshot) {
+      const parsed = JSON.parse(rawSnapshot);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed;
+      }
+    }
+  } catch {}
+
+  // 2. Query dari tabel relasional tbl_pengajuan_paket_mandiri
   try {
     const { data, error } = await supabase
       .from("tbl_pengajuan_paket_mandiri")
@@ -244,30 +256,35 @@ export async function getDbLeads(): Promise<CustomerLeadItem[]> {
       return INITIAL_LEADS;
     }
 
-    return data.map((row) => ({
-      id: row.id_pengajuan,
-      name: row.nama_pemesan,
-      institution: row.nama_instansi || undefined,
-      phone: row.nomor_whatsapp,
-      destination: row.kota_destinasi,
-      category: row.kategori_acara,
-      pax: row.jumlah_pax,
-      days: row.durasi_hari,
-      hotel: row.kelas_bintang_hotel,
-      budget: Number(row.estimasi_anggaran),
-      customerBid: Number(row.tawaran_pelanggan || row.estimasi_anggaran),
-      bottomLineCost: Number(row.batas_bawah_modal_dss || 0),
-      targetMargin: Number(row.margin_keuntungan_target || 15),
-      createdAt: new Date(row.waktu_diajukan).toLocaleTimeString("id-ID", {
-        hour: "2-digit",
-        minute: "2-digit",
-      }) + " WIB",
-      status: row.status_pengajuan as any,
-      notes: row.catatan_tambahan || "",
-      selectedSpots: [],
-      pettyCashInitial: 1500000,
-      fieldExpenses: [],
-    }));
+    return data.map((row) => {
+      if (row.data_lengkap_json && typeof row.data_lengkap_json === "object") {
+        return row.data_lengkap_json as CustomerLeadItem;
+      }
+      return {
+        id: row.id_pengajuan,
+        name: row.nama_pemesan,
+        institution: row.nama_instansi || undefined,
+        phone: row.nomor_whatsapp,
+        destination: row.kota_destinasi,
+        category: row.kategori_acara,
+        pax: row.jumlah_pax,
+        days: row.durasi_hari,
+        hotel: row.kelas_bintang_hotel,
+        budget: Number(row.estimasi_anggaran),
+        customerBid: Number(row.tawaran_pelanggan || row.estimasi_anggaran),
+        bottomLineCost: Number(row.batas_bawah_modal_dss || 0),
+        targetMargin: Number(row.margin_keuntungan_target || 15),
+        createdAt: new Date(row.waktu_diajukan).toLocaleTimeString("id-ID", {
+          hour: "2-digit",
+          minute: "2-digit",
+        }) + " WIB",
+        status: row.status_pengajuan as any,
+        notes: row.catatan_tambahan || "",
+        selectedSpots: [],
+        pettyCashInitial: 1500000,
+        fieldExpenses: [],
+      };
+    });
   } catch {
     return INITIAL_LEADS;
   }
@@ -293,10 +310,62 @@ export async function insertDbLead(lead: CustomerLeadItem): Promise<boolean> {
       margin_keuntungan_target: lead.targetMargin,
       status_pengajuan: lead.status || "baru",
       catatan_tambahan: lead.notes || null,
+      data_lengkap_json: lead,
     };
 
-    const { error } = await supabase.from("tbl_pengajuan_paket_mandiri").insert(row);
+    const { error } = await supabase.from("tbl_pengajuan_paket_mandiri").upsert(row);
+
+    // Perbarui juga snapshot terpusat di tbl_konfigurasi_sistem
+    try {
+      const existing = await getDbLeads();
+      const updatedList = [lead, ...existing.filter((item) => item.id !== lead.id)];
+      await saveDbSystemConfig(
+        "nusatrip_crm_leads",
+        JSON.stringify(updatedList),
+        "Snapshot data CRM leads NusaTrip"
+      );
+    } catch {}
+
     return !error;
+  } catch {
+    return false;
+  }
+}
+
+export async function saveDbLeadsBulk(leads: CustomerLeadItem[]): Promise<boolean> {
+  if (!isSupabaseConfigured()) return false;
+
+  try {
+    // 1. Simpan snapshot lengkap ke tbl_konfigurasi_sistem
+    await saveDbSystemConfig(
+      "nusatrip_crm_leads",
+      JSON.stringify(leads),
+      "Snapshot data CRM leads NusaTrip"
+    );
+
+    // 2. Simpan setiap baris ke tbl_pengajuan_paket_mandiri
+    if (leads.length > 0) {
+      const rows = leads.map((lead) => ({
+        id_pengajuan: lead.id,
+        nama_pemesan: lead.name,
+        nama_instansi: lead.institution || null,
+        nomor_whatsapp: lead.phone,
+        kota_destinasi: lead.destination,
+        kategori_acara: lead.category,
+        jumlah_pax: lead.pax,
+        durasi_hari: lead.days,
+        kelas_bintang_hotel: lead.hotel,
+        estimasi_anggaran: lead.budget,
+        tawaran_pelanggan: lead.customerBid,
+        batas_bawah_modal_dss: lead.bottomLineCost,
+        margin_keuntungan_target: lead.targetMargin,
+        status_pengajuan: lead.status || "baru",
+        catatan_tambahan: lead.notes || null,
+        data_lengkap_json: lead,
+      }));
+      await supabase.from("tbl_pengajuan_paket_mandiri").upsert(rows);
+    }
+    return true;
   } catch {
     return false;
   }
@@ -310,6 +379,18 @@ export async function updateDbLeadStatus(id: string, status: string): Promise<bo
       .from("tbl_pengajuan_paket_mandiri")
       .update({ status_pengajuan: status })
       .eq("id_pengajuan", id);
+
+    // Sinkronkan juga ke snapshot json
+    try {
+      const current = await getDbLeads();
+      const updated = current.map((l) => (l.id === id ? { ...l, status: status as any } : l));
+      await saveDbSystemConfig(
+        "nusatrip_crm_leads",
+        JSON.stringify(updated),
+        "Snapshot data CRM leads NusaTrip"
+      );
+    } catch {}
+
     return !error;
   } catch {
     return false;

@@ -62,7 +62,7 @@ export default function InternalGatePage() {
             .then((r) => (r.ok ? r.json() : null))
             .then((leadData) => {
               if (leadData && Array.isArray(leadData.leads) && leadData.leads.length > 0) {
-                saveCustomerLeads(leadData.leads);
+                saveCustomerLeads(leadData.leads, false);
               }
             })
             .catch(() => {});
@@ -75,6 +75,23 @@ export default function InternalGatePage() {
         setIsCheckingAuth(false);
       });
   }, []);
+
+  // Sinkronisasi otomatis latar belakang berkala saat admin aktif di dashboard
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    const interval = setInterval(() => {
+      fetch("/api/leads", { cache: "no-store" })
+        .then((r) => (r.ok ? r.json() : null))
+        .then((leadData) => {
+          if (leadData && Array.isArray(leadData.leads)) {
+            saveCustomerLeads(leadData.leads, false);
+          }
+        })
+        .catch(() => {});
+    }, 20000);
+
+    return () => clearInterval(interval);
+  }, [isAuthenticated]);
 
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -95,7 +112,7 @@ export default function InternalGatePage() {
           .then((r) => (r.ok ? r.json() : null))
           .then((leadData) => {
             if (leadData && Array.isArray(leadData.leads) && leadData.leads.length > 0) {
-              saveCustomerLeads(leadData.leads);
+              saveCustomerLeads(leadData.leads, false);
             }
           })
           .catch(() => {});

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { type CustomerLeadItem } from "@/lib/data/tour-data";
 import { checkAdminSession } from "@/lib/auth/session";
-import { getDbLeads, insertDbLead, updateDbLeadStatus } from "@/lib/supabase/db";
+import { getDbLeads, insertDbLead, updateDbLeadStatus, saveDbLeadsBulk } from "@/lib/supabase/db";
 import { checkRateLimit, getClientIp } from "@/lib/security/rate-limiter";
 import { CreateLeadSchema, UpdateLeadStatusSchema } from "@/lib/security/schemas";
 
@@ -14,10 +14,20 @@ export async function GET() {
   }
 
   try {
-    if (!memoryLeads) {
-      memoryLeads = await getDbLeads();
+    const freshDbLeads = await getDbLeads();
+    if (freshDbLeads && Array.isArray(freshDbLeads) && freshDbLeads.length > 0) {
+      memoryLeads = freshDbLeads;
+    } else if (!memoryLeads) {
+      memoryLeads = [];
     }
-    return NextResponse.json({ leads: memoryLeads });
+    return NextResponse.json(
+      { leads: memoryLeads },
+      {
+        headers: {
+          "Cache-Control": "no-store, no-cache, must-revalidate",
+        },
+      }
+    );
   } catch {
     return NextResponse.json({ error: "Gagal memuat data leads" }, { status: 500 });
   }
@@ -161,5 +171,24 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ success: true });
   } catch {
     return NextResponse.json({ error: "Gagal memperbarui data lead" }, { status: 500 });
+  }
+}
+
+export async function PUT(request: Request) {
+  try {
+    const isAdmin = await checkAdminSession();
+    if (!isAdmin) {
+      return NextResponse.json({ error: "Akses tidak diizinkan" }, { status: 401 });
+    }
+
+    const body = await request.json();
+    if (body && Array.isArray(body.leads)) {
+      memoryLeads = body.leads;
+      await saveDbLeadsBulk(body.leads);
+      return NextResponse.json({ success: true, count: body.leads.length });
+    }
+    return NextResponse.json({ error: "Format data leads tidak valid" }, { status: 400 });
+  } catch {
+    return NextResponse.json({ error: "Gagal sinkronisasi data" }, { status: 500 });
   }
 }
